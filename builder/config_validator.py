@@ -3,7 +3,7 @@
 from typing import Any, Dict, List
 
 VALID_TRIGGER_TYPES = {"scheduled", "polling", "manual"}
-VALID_ACTION_TYPES = {"llm_analyze", "notify_telegram", "http_request"}
+VALID_ACTION_TYPES = {"llm_analyze", "notify_telegram", "notify_whatsapp", "http_request"}
 REQUIRED_TOP_LEVEL = {"name", "trigger", "actions"}
 
 
@@ -54,6 +54,8 @@ def validate(config: Dict[str, Any]) -> List[str]:
                 errors.append(f"Action {i}: 'llm_analyze' requires a 'prompt' field.")
             if a_type == "notify_telegram" and not action.get("message"):
                 errors.append(f"Action {i}: 'notify_telegram' requires a 'message' field.")
+            if a_type == "notify_whatsapp" and not action.get("message"):
+                errors.append(f"Action {i}: 'notify_whatsapp' requires a 'message' field.")
             if a_type == "http_request" and not action.get("url"):
                 errors.append(f"Action {i}: 'http_request' requires a 'url' field.")
 

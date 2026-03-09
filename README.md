@@ -1,6 +1,6 @@
 # ClawBlink – No‑Code AI Agent Builder from Telegram / WhatsApp Chat
 
-Describe an AI agent in plain English over **Telegram**, get results on **Telegram and WhatsApp**.  
+Describe an AI agent in plain English over **Telegram or WhatsApp** and get results back on the **same chat app**.  
 ClawBlink turns your messages into real, running automations – no code, no config files, no dashboards.
 
 ```text
@@ -50,7 +50,7 @@ If you want a **simple, forkable, no‑code agent builder from chat**, ClawBlink
 
 ## What ClawBlink Can Do
 
-Just send a message to your Telegram bot. ClawBlink takes care of LLM prompts, YAML config, triggers, actions, and scheduling.
+Just send a message to your **Telegram bot** or **WhatsApp number**. ClawBlink takes care of LLM prompts, YAML config, triggers, actions, and scheduling.
 
 | Message | What ClawBlink builds |
 |---|---|
@@ -64,7 +64,7 @@ You can also create agents manually by dropping YAML files into `configs/`, but 
 
 ---
 
-## Quick Start
+## Quick Start (Telegram)
 
 ```bash
 # 1. Clone
@@ -101,10 +101,15 @@ Any plain chat message that is **not** a command is treated as a request to crea
 
 ---
 
-## WhatsApp Notifications (Optional)
+## WhatsApp Bot & Notifications
 
-ClawBlink can also deliver results to **WhatsApp** using Twilio’s WhatsApp API.  
-Agents are still created and controlled via **Telegram chat**, but individual agents can send their output to one or more WhatsApp numbers.
+ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Telegram) plus WhatsApp notifications.
+
+You can:
+
+- Use **only Telegram**
+- Use **only WhatsApp**
+- Or run **both** in parallel (two processes) and create agents from either channel.
 
 ### 1. Enable WhatsApp in Twilio
 
@@ -125,7 +130,17 @@ TWILIO_AUTH_TOKEN=your-auth-token
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 ```
 
-### 3. Use `notify_whatsapp` in an agent
+### 3. Run the WhatsApp bot
+
+In a separate terminal from the Telegram bot (or as your only process if you only want WhatsApp):
+
+```bash
+python -m interfaces.whatsapp_twilio
+```
+
+The bot listens on `http://0.0.0.0:8000/whatsapp` by default; change the port with `WHATSAPP_PORT` in `.env`.
+
+### 4. Use `notify_whatsapp` in an agent
 
 Add a `notify_whatsapp` action to any agent config:
 
