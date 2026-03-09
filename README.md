@@ -15,6 +15,7 @@ ClawBlink: Agent created.
 
 - **No‑code agents**: Build background agents from a single chat message.
 - **Chat‑first**: Configure everything from Telegram – no web UI.
+- **WhatsApp‑ready**: Send agent notifications to WhatsApp via Twilio with a single action.
 - **Local‑first friendly**: Works with Ollama, Gemini free tier, or any OpenAI‑compatible endpoint via a SmartProvider.
 - **Tiny codebase**: Roughly 700–900 lines of Python, easy to fork and hack.
 
@@ -96,6 +97,57 @@ Then open your Telegram bot and start describing agents.
 | `/status` | Detailed status of all agents (last run, intervals, etc.). |
 
 Any plain chat message that is **not** a command is treated as a request to create a new agent.
+
+---
+
+## WhatsApp Notifications (Optional)
+
+ClawBlink can also deliver results to **WhatsApp** using Twilio’s WhatsApp API.  
+Agents are still created and controlled via **Telegram chat**, but individual agents can send their output to one or more WhatsApp numbers.
+
+### 1. Enable WhatsApp in Twilio
+
+1. Create or sign in to your Twilio account.
+2. Enable the **WhatsApp Sandbox** or configure a WhatsApp Business sender.
+3. Copy:
+   - `Account SID`
+   - `Auth Token`
+   - WhatsApp **From** number (looks like `whatsapp:+14155238886`).
+
+### 2. Set environment variables
+
+In your `.env`:
+
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+```
+
+### 3. Use `notify_whatsapp` in an agent
+
+Add a `notify_whatsapp` action to any agent config:
+
+```yaml
+actions:
+  - type: http_request
+    method: GET
+    url: https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
+    output: btc_raw
+
+  - type: llm_analyze
+    prompt: |
+      Here is Bitcoin price data:
+      {btc_raw}
+      Explain the current price in simple terms.
+    output: analysis
+
+  - type: notify_whatsapp
+    to: "whatsapp:+911234567890"
+    message: "{analysis}"
+```
+
+You can mix `notify_telegram` and `notify_whatsapp` in the same agent if you want both channels.
 
 ---
 

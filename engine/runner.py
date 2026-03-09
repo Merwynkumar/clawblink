@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from engine.triggers.scheduled import ScheduledTrigger
 from engine.triggers.polling import PollingTrigger
 from engine.triggers.manual import ManualTrigger
-from engine.actions import llm_analyze, notify_telegram, http_request
+from engine.actions import llm_analyze, notify_telegram, http_request, notify_whatsapp
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,8 @@ class AgentInstance:
                     variables = llm_analyze.execute(action, variables, self.llm)
                 elif a_type == "notify_telegram":
                     variables = notify_telegram.execute(action, variables)
+                elif a_type == "notify_whatsapp":
+                    variables = notify_whatsapp.execute(action, variables)
                 elif a_type == "http_request":
                     variables = http_request.execute(action, variables)
                 else:
