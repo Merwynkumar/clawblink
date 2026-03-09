@@ -1,6 +1,7 @@
-# ClawBlink – No‑Code AI Agent Builder from Chat
+# ClawBlink – No‑Code AI Agent Builder from Telegram / WhatsApp Chat
 
-Describe an AI agent in plain English. ClawBlink turns it into a real, running automation – no code, no config files, no dashboards.
+Describe an AI agent in plain English over **Telegram**, get results on **Telegram and WhatsApp**.  
+ClawBlink turns your messages into real, running automations – no code, no config files, no dashboards.
 
 ```text
 You: "Monitor my GitHub repo for new issues and send me AI summaries on Telegram"
