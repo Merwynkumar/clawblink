@@ -24,6 +24,12 @@ build/
 .env
 .env.local
 
+# Saved agent configs may contain personal data
+# configs/
+
+# Old generated projects (can be deleted)
+projects/
+
 # OS
 .DS_Store
 Thumbs.db

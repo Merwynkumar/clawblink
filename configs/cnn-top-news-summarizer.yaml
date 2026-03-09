@@ -1,0 +1,25 @@
+name: cnn-top-news-summarizer
+description: Fetches latest news from CNN, summarizes top 3 with AI, and sends a notification.
+trigger:
+  type: scheduled
+  interval_minutes: 5
+  source: generic
+actions:
+- type: http_request
+  method: GET
+  url: https://edition.cnn.com/
+  output: cnn_html
+- type: llm_analyze
+  prompt: 'Analyze the following HTML content from a news website. Identify the main
+    news articles and provide a concise summary of the top 3 most important news items.
+    Present each summary as a distinct point. Content:
+
+    {cnn_html}'
+  output: top_news_summary
+- type: notify_telegram
+  message: 'Top 3 CNN News:
+
+    {top_news_summary}'
+  chat_id: '1179679431'
+llm:
+  provider: gemini

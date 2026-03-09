@@ -1,0 +1,21 @@
+name: bitcoin-price-checker
+description: Check the current Bitcoin price and provide a brief market comment
+trigger:
+  type: scheduled
+  interval_minutes: 5
+actions:
+- type: http_request
+  method: GET
+  url: https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
+  output: bitcoin_data
+- type: llm_analyze
+  prompt: 'Here is real Bitcoin price data that was just fetched from an API:
+
+    {bitcoin_data}
+
+    Based on this data, tell me the current Bitcoin price in USD and add a one-line
+    market comment.'
+  output: analysis
+- type: notify_telegram
+  message: '{analysis}'
+  chat_id: '1179679431'

@@ -1,0 +1,20 @@
+name: gold-price-checker
+description: Checks the current gold price from a trusted website and provides the
+  price in grams and sovereigns with a brief market comment.
+trigger:
+  type: polling
+  interval_minutes: 5
+  source: url_check
+  url: https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=1d
+actions:
+- type: http_request
+  method: GET
+  url: '{url}'
+  output: gold_data
+- type: llm_analyze
+  prompt: 'Here is the gold price data: {gold_data}. Extract the current price in
+    grams and sovereigns in USD and INR, and provide a brief market comment.'
+  output: analysis
+- type: notify_telegram
+  message: '{analysis}'
+  chat_id: '1179679431'
