@@ -242,6 +242,9 @@ clawblink/                    ~750 lines of Python
 
 ## Setup
 
+<details>
+<summary><strong>Telegram setup</strong> (chat + notifications)</summary>
+
 ### 1. Get a Telegram Bot Token
 
 1. Open Telegram, search for `@BotFather`.
@@ -290,6 +293,48 @@ python main.py
 ```
 
 Leave `python main.py` running – it powers your Telegram bot and scheduler.
+
+</details>
+
+<details>
+<summary><strong>WhatsApp setup</strong> (chat + notifications via Twilio)</summary>
+
+### 1. Enable WhatsApp in Twilio
+
+1. Create or sign in to your Twilio account.
+2. Enable the **WhatsApp Sandbox** or configure a WhatsApp Business sender.
+3. Copy from the Twilio console:
+   - `Account SID`
+   - `Auth Token`
+   - WhatsApp **From** number (looks like `whatsapp:+14155238886`).
+
+### 2. Configure `.env` for WhatsApp
+
+In your `.env`:
+
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+```
+
+You can run WhatsApp **with or without** Telegram. If you want WhatsApp‑only, you do not need `TELEGRAM_BOT_TOKEN`.
+
+### 3. Run the WhatsApp bot
+
+In a terminal:
+
+```bash
+pip install -r requirements.txt
+python -m interfaces.whatsapp_twilio
+```
+
+The bot listens on `http://0.0.0.0:8000/whatsapp` by default; change the port with `WHATSAPP_PORT` in `.env`.  
+Point your Twilio WhatsApp webhook URL at `https://<your-public-url>/whatsapp` (for example via ngrok).
+
+Once running, you can message your Twilio WhatsApp number with `/start`, `/list`, or a plain‑English request to create agents.
+
+</details>
 
 ---
 
