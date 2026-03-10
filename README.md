@@ -84,28 +84,52 @@ You can also create agents manually by dropping YAML files into `configs/`, but 
 
 ---
 
-## Quick Start (Telegram only)
+## 📦 Install (from source)
 
 ```bash
-# 1. Clone
 git clone https://github.com/Merwynkumar/clawblink.git
 cd clawblink
 
-# 2. Install deps (recommended: a virtualenv)
 pip install -r requirements.txt
-
-# 3. (Optional but recommended) install ClawBlink as a package to get the `clawblink` CLI
-pip install -e .
-
-# 4. Configure (add your keys to .env)
+pip install -e .      # installs the `clawblink` CLI
 cp .env.example .env
-# Edit .env: set TELEGRAM_BOT_TOKEN and either GEMINI_API_KEY or an OPENAI-compatible endpoint / OLLAMA_MODEL
+```
 
-# 5. Run the Telegram gateway (same spirit as `nanobot gateway`)
+Then edit `.env` and set:
+
+- `TELEGRAM_BOT_TOKEN` from `@BotFather`
+- **one** LLM option (see comments in `.env.example`):
+  - `OLLAMA_MODEL=...` **or**
+  - `GEMINI_API_KEY=...` **or**
+  - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`
+
+Updating later is just:
+
+```bash
+git pull
+pip install -e .
+```
+
+---
+
+## 🚀 Quick Start (about 1 minute)
+
+### Telegram (recommended)
+
+```bash
+# From project root
 clawblink gateway
 ```
 
-Then open your Telegram bot and start describing agents.
+Then in Telegram:
+
+1. Create a bot with `@BotFather` (`/newbot`) and put the token in `.env` as `TELEGRAM_BOT_TOKEN`.
+2. Open your bot chat, send `/start`.
+3. Send a plain-English request like:
+   - "Monitor my GitHub repo user/repo for new issues and send me summaries"
+   - "Every morning, check top AI news and notify me"
+
+ClawBlink will reply, create an agent, and start running it for you.
 
 ---
 
@@ -124,51 +148,39 @@ Any plain chat message that is **not** a command is treated as a request to crea
 
 ---
 
-## WhatsApp Bot & Notifications (WhatsApp only)
+## WhatsApp Bot & Notifications (WhatsApp Web bridge)
 
-ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Telegram) plus WhatsApp notifications.
+ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Telegram) plus WhatsApp notifications using your own WhatsApp Web session.
 
-You can choose:
+### Quick Start (WhatsApp Web bridge)
 
-- **Telegram only** – run `python main.py`
-- **WhatsApp only (WhatsApp Web bridge)** – use the QR-based bridge below
-- **Both** – run both flows in parallel and use whichever app you prefer
+Requires **Node.js ≥18**.
 
-### Quick Start (WhatsApp Web bridge – no Twilio)
+1. **Link device (QR)**
 
-1. **Link device**
    ```bash
    cd bridge/whatsapp
    npm install          # first time only
+   cd ../..
+
+   clawblink channels login   # shows QR in terminal
    ```
 
-   Then, from the project root:
+   Scan the QR with WhatsApp → Settings → Linked Devices → Link a device.
+
+2. **Run bridge (two terminals)**
 
    ```bash
-   # Shows QR in terminal (similar to `nanobot channels login`)
-   clawblink channels login
-   ```
-   Scan the QR with WhatsApp → Settings → Linked devices → Link a device.
-
-2. **Run bridge**
-
-   In one terminal:
-
-   ```bash
-   # Node WhatsApp gateway (similar to `nanobot gateway`)
+   # Terminal 1 – Node WhatsApp gateway
    clawblink channels gateway
-   ```
 
-   In a second terminal:
-
-   ```bash
-   # Python WhatsApp bridge HTTP server
-   pip install -r requirements.txt
-   pip install -e .       # if not already done
+   # Terminal 2 – Python WhatsApp bridge
    clawblink whatsapp-bridge
    ```
 
-Now send `/start` or a plain-English request from that same WhatsApp account – ClawBlink will reply in WhatsApp and build agents for you.
+3. **Chat in WhatsApp**
+
+   From that same WhatsApp account, send `/start` or a plain-English request – ClawBlink will reply in WhatsApp and build agents for you.
 
 ### Use `notify_whatsapp` in an agent
 
@@ -263,62 +275,6 @@ clawblink/                    ~750 lines of Python
 ```
 
 ---
-
-## Setup
-
-<details>
-<summary><strong>Telegram setup</strong> (chat + notifications)</summary>
-
-### 1. Get a Telegram Bot Token
-
-1. Open Telegram, search for `@BotFather`.
-2. Send `/newbot`, follow the prompts.
-3. Copy the bot token into your `.env` as `TELEGRAM_BOT_TOKEN`.
-
-### 2. Choose an LLM Provider
-
-ClawBlink uses a **SmartProvider** that can choose from:
-
-- **Ollama** (local, free, no API key) – great default.
-- **Gemini** free tier.
-- Any **OpenAI‑compatible** endpoint (OpenAI, DeepSeek, Groq, Together, OpenRouter, etc.).
-
-See `.env.example` for all supported options. Typical options:
-
-```bash
-# Local Ollama (recommended if you have a GPU/CPU that can run models)
-OLLAMA_MODEL=qwen2.5-coder:7b
-
-# Or: Gemini free tier
-GEMINI_API_KEY=your-gemini-key-here
-
-# Or: any OpenAI‑compatible endpoint
-OPENAI_API_KEY=sk-...
-OPENAI_BASE_URL=https://api.openai.com/v1   # or another provider
-OPENAI_MODEL=gpt-4.1-mini
-```
-
-### 3. Configure `.env`
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` and set at least:
-
-- `TELEGRAM_BOT_TOKEN=...`
-- One of: `OLLAMA_MODEL`, `GEMINI_API_KEY`, or (`OPENAI_API_KEY` + `OPENAI_BASE_URL` + `OPENAI_MODEL`).
-
-### 4. Run ClawBlink (Telegram)
-
-```bash
-pip install -r requirements.txt
-python main.py
-```
-
-Leave `python main.py` running – it powers your Telegram bot and scheduler.
-
-</details>
 
 ## Agent Config Format (YAML)
 
