@@ -114,39 +114,34 @@ ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Tel
 You can choose:
 
 - **Telegram only** – run `python main.py`
-- **WhatsApp only** – run `python -m interfaces.whatsapp_twilio`
-- **Both** – run both processes in parallel and use whichever app you prefer
+- **WhatsApp only (WhatsApp Web bridge)** – use the QR-based bridge below
+- **Both** – run both flows in parallel and use whichever app you prefer
 
-### 1. Enable WhatsApp in Twilio
+### Quick Start (WhatsApp Web bridge – no Twilio)
 
-1. Create or sign in to your Twilio account.
-2. Enable the **WhatsApp Sandbox** or configure a WhatsApp Business sender.
-3. Copy:
-   - `Account SID`
-   - `Auth Token`
-   - WhatsApp **From** number (looks like `whatsapp:+14155238886`).
+1. **Link device**
+   ```bash
+   cd bridge/whatsapp
+   npm install          # already done once
+   npm run login        # shows QR in terminal
+   ```
+   Scan the QR with WhatsApp → Settings → Linked devices → Link a device.
 
-### 2. Set environment variables
+2. **Run bridge**
+   ```bash
+   cd bridge/whatsapp
+   npm run gateway
+   ```
 
-In your `.env`:
+3. **Run ClawBlink WhatsApp interface**
+   ```bash
+   pip install -r requirements.txt
+   python -m interfaces.whatsapp_bridge
+   ```
 
-```bash
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-```
+Now send `/start` or a plain-English request from that same WhatsApp account – ClawBlink will reply in WhatsApp and build agents for you.
 
-### 3. Run the WhatsApp bot
-
-In a separate terminal from the Telegram bot (or as your only process if you only want WhatsApp):
-
-```bash
-python -m interfaces.whatsapp_twilio
-```
-
-The bot listens on `http://0.0.0.0:8000/whatsapp` by default; change the port with `WHATSAPP_PORT` in `.env`.
-
-### 4. Use `notify_whatsapp` in an agent
+### Use `notify_whatsapp` in an agent
 
 Add a `notify_whatsapp` action to any agent config:
 
