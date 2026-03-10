@@ -182,9 +182,9 @@ Requires **Node.js ≥18**.
 
    From that same WhatsApp account, send `/start` or a plain-English request – ClawBlink will reply in WhatsApp and build agents for you.
 
-**Use `notify_whatsapp` in an agent**
+**Optional: hand‑written WhatsApp agent (advanced)**
 
-Add a `notify_whatsapp` action to any agent config:
+If you prefer to edit YAML by hand instead of creating agents from chat, you can add a `notify_whatsapp` action to any agent config:
 
 ```yaml
 actions:
