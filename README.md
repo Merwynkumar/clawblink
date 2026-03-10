@@ -114,7 +114,8 @@ pip install -e .
 
 ## 🚀 Quick Start (about 1 minute)
 
-### Telegram (recommended)
+<details>
+<summary><strong>Telegram (recommended)</strong></summary>
 
 ```bash
 # From project root
@@ -130,6 +131,8 @@ Then in Telegram:
    - "Every morning, check top AI news and notify me"
 
 ClawBlink will reply, create an agent, and start running it for you.
+
+</details>
 
 ---
 
@@ -148,11 +151,10 @@ Any plain chat message that is **not** a command is treated as a request to crea
 
 ---
 
-## WhatsApp Bot & Notifications (WhatsApp Web bridge)
+<details>
+<summary><strong>WhatsApp (Web bridge)</strong></summary>
 
 ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Telegram) plus WhatsApp notifications using your own WhatsApp Web session.
-
-### Quick Start (WhatsApp Web bridge)
 
 Requires **Node.js ≥18**.
 
@@ -181,6 +183,8 @@ Requires **Node.js ≥18**.
 3. **Chat in WhatsApp**
 
    From that same WhatsApp account, send `/start` or a plain-English request – ClawBlink will reply in WhatsApp and build agents for you.
+
+</details>
 
 ### Use `notify_whatsapp` in an agent
 
