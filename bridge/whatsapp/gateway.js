@@ -60,9 +60,39 @@ const server = http.createServer((req, res) => {
           res.end("Missing 'to' or 'text'");
           return;
         }
-        await client.sendMessage(to, text);
-        res.statusCode = 200;
-        res.end("ok");
+
+        try {
+          await client.sendMessage(to, text);
+          res.statusCode = 200;
+          res.end("ok");
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          console.error("Error in /send handler:", msg);
+
+          if (msg.includes("detached Frame")) {
+            console.error("WhatsApp client frame detached. Reinitializing client...");
+            try {
+              await client.destroy();
+            } catch (destroyErr) {
+              console.error(
+                "Error while destroying WhatsApp client:",
+                destroyErr && destroyErr.message ? destroyErr.message : String(destroyErr)
+              );
+            }
+            // Re-initialize without awaiting so that the HTTP response is not blocked.
+            try {
+              client.initialize();
+            } catch (initErr) {
+              console.error(
+                "Error while reinitializing WhatsApp client:",
+                initErr && initErr.message ? initErr.message : String(initErr)
+              );
+            }
+          }
+
+          res.statusCode = 500;
+          res.end("error");
+        }
       } catch (err) {
         console.error("Error in /send handler:", err.message || err);
         res.statusCode = 500;

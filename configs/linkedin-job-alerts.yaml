@@ -1,0 +1,21 @@
+name: linkedin-job-alerts
+description: Monitors LinkedIn for data science-related jobs with 11+ years of experience
+  and sends the top 5 matches every 10 minutes.
+trigger:
+  type: polling
+  interval_minutes: 10
+  source: url_check
+  url: https://www.linkedin.com/jobs/search/?keywords=data+science&location=Chennai&experience=11%2B&workplace-type=hybrid&date=Today
+actions:
+- type: http_request
+  method: GET
+  url: '{url}'
+  output: job_data
+- type: llm_analyze
+  prompt: 'Here is LinkedIn job data: {job_data}. Extract the top 5 matches of data
+    science-related jobs with 11+ years of experience posted today for Chennai hybrid
+    location.'
+  output: top_jobs
+- type: notify_whatsapp
+  message: '{top_jobs}'
+  to: 265995998519534@lid

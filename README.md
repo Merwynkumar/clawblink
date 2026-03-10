@@ -27,6 +27,20 @@ ClawBlink (both):
 
 ---
 
+## CLI quick commands
+
+```bash
+# Telegram
+clawblink gateway
+
+# WhatsApp Web (QR)
+clawblink channels login     # link device (QR)
+clawblink channels gateway   # Node WhatsApp gateway
+clawblink whatsapp-bridge    # Python WhatsApp bridge
+```
+
+---
+
 ## News
 
 - **2026‑03‑07** – Gold price agent now uses real COMEX futures data (Yahoo Finance GC=F) with smart HTTP error handling.
@@ -80,12 +94,15 @@ cd clawblink
 # 2. Install deps (recommended: a virtualenv)
 pip install -r requirements.txt
 
-# 3. Configure (add your keys to .env)
+# 3. (Optional but recommended) install ClawBlink as a package to get the `clawblink` CLI
+pip install -e .
+
+# 4. Configure (add your keys to .env)
 cp .env.example .env
 # Edit .env: set TELEGRAM_BOT_TOKEN and either GEMINI_API_KEY or an OPENAI-compatible endpoint / OLLAMA_MODEL
 
-# 4. Run the Telegram bot
-python main.py
+# 5. Run the Telegram gateway (same spirit as `nanobot gateway`)
+clawblink gateway
 ```
 
 Then open your Telegram bot and start describing agents.
@@ -122,21 +139,33 @@ You can choose:
 1. **Link device**
    ```bash
    cd bridge/whatsapp
-   npm install          # already done once
-   npm run login        # shows QR in terminal
+   npm install          # first time only
+   ```
+
+   Then, from the project root:
+
+   ```bash
+   # Shows QR in terminal (similar to `nanobot channels login`)
+   clawblink channels login
    ```
    Scan the QR with WhatsApp → Settings → Linked devices → Link a device.
 
 2. **Run bridge**
+
+   In one terminal:
+
    ```bash
-   cd bridge/whatsapp
-   npm run gateway
+   # Node WhatsApp gateway (similar to `nanobot gateway`)
+   clawblink channels gateway
    ```
 
-3. **Run ClawBlink WhatsApp interface**
+   In a second terminal:
+
    ```bash
+   # Python WhatsApp bridge HTTP server
    pip install -r requirements.txt
-   python -m interfaces.whatsapp_bridge
+   pip install -e .       # if not already done
+   clawblink whatsapp-bridge
    ```
 
 Now send `/start` or a plain-English request from that same WhatsApp account – ClawBlink will reply in WhatsApp and build agents for you.
@@ -221,12 +250,12 @@ clawblink/                    ~750 lines of Python
 │   └── actions/
 │       ├── llm_analyze.py    # LLM analysis on fetched data
 │       ├── notify_telegram.py# Send Telegram message
-│       ├── notify_whatsapp.py# Send WhatsApp message via Twilio
+│       ├── notify_whatsapp.py# Send WhatsApp message via local WhatsApp Web bridge
 │       └── http_request.py   # GET/POST any API, HTML → text
 ├── interfaces/
 │   ├── __init__.py
 │   ├── telegram_bot.py       # Telegram bot handlers + wiring
-│   └── whatsapp_twilio.py    # WhatsApp webhook (Twilio) + handlers
+│   └── whatsapp_bridge.py    # WhatsApp Web bridge HTTP server
 ├── configs/                  # Saved agent YAML configs
 ├── pyproject.toml            # Project metadata
 ├── requirements.txt          # Minimal dependencies
@@ -291,48 +320,6 @@ Leave `python main.py` running – it powers your Telegram bot and scheduler.
 
 </details>
 
-<details>
-<summary><strong>WhatsApp setup</strong> (chat + notifications via Twilio)</summary>
-
-### 1. Enable WhatsApp in Twilio
-
-1. Create or sign in to your Twilio account.
-2. Enable the **WhatsApp Sandbox** or configure a WhatsApp Business sender.
-3. Copy from the Twilio console:
-   - `Account SID`
-   - `Auth Token`
-   - WhatsApp **From** number (looks like `whatsapp:+14155238886`).
-
-### 2. Configure `.env` for WhatsApp
-
-In your `.env`:
-
-```bash
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-```
-
-You can run WhatsApp **with or without** Telegram. If you want WhatsApp‑only, you do not need `TELEGRAM_BOT_TOKEN`.
-
-### 3. Run the WhatsApp bot
-
-In a terminal:
-
-```bash
-pip install -r requirements.txt
-python -m interfaces.whatsapp_twilio
-```
-
-The bot listens on `http://0.0.0.0:8000/whatsapp` by default; change the port with `WHATSAPP_PORT` in `.env`.  
-Point your Twilio WhatsApp webhook URL at `https://<your-public-url>/whatsapp` (for example via ngrok).
-
-Once running, you can message your Twilio WhatsApp number with `/start`, `/list`, or a plain‑English request to create agents.
-
-</details>
-
----
-
 ## Agent Config Format (YAML)
 
 ClawBlink generates YAML configs automatically, but they are plain files in `configs/` and you can edit or add them manually.
@@ -388,7 +375,7 @@ You can inspect any agent’s config with `/config <name>` in Telegram.
 | `http_request` | Fetch data from any HTTP API or URL. | `url`, `method`, `headers`, `output` |
 | `llm_analyze` | Run an LLM on previously fetched data. | `prompt` (with `{variables}`), `output` |
 | `notify_telegram` | Send a formatted message to Telegram. | `message` (with `{variables}`), `chat_id` (optional, auto‑filled) |
-| `notify_whatsapp` | Send a formatted message to WhatsApp via Twilio. | `message` (with `{variables}`), `to` (e.g. `whatsapp:+911234567890`) |
+| `notify_whatsapp` | Send a formatted message to WhatsApp via the local WhatsApp Web bridge. | `message` (with `{variables}`), `to` (e.g. your WhatsApp `@c.us` or `@lid` ID) |
 
 The usual pattern is:
 
@@ -408,7 +395,7 @@ ClawBlink intentionally keeps its dependency list short:
 requests              # HTTP client
 python-telegram-bot   # Telegram interface
 pyyaml                # YAML parsing
-flask                 # WhatsApp webhook server (Twilio)
+flask                 # WhatsApp Web bridge HTTP server
 ```
 
 ---
