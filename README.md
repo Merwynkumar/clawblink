@@ -132,11 +132,7 @@ Then in Telegram:
 
 ClawBlink will reply, create an agent, and start running it for you.
 
-</details>
-
----
-
-## Telegram Commands
+**Telegram commands**
 
 | Command | Description |
 |---|---|
@@ -148,6 +144,8 @@ ClawBlink will reply, create an agent, and start running it for you.
 | `/status` | Detailed status of all agents (last run, intervals, etc.). |
 
 Any plain chat message that is **not** a command is treated as a request to create a new agent.
+
+</details>
 
 ---
 
@@ -184,9 +182,7 @@ Requires **Node.js ≥18**.
 
    From that same WhatsApp account, send `/start` or a plain-English request – ClawBlink will reply in WhatsApp and build agents for you.
 
-</details>
-
-### Use `notify_whatsapp` in an agent
+**Use `notify_whatsapp` in an agent**
 
 Add a `notify_whatsapp` action to any agent config:
 
@@ -211,6 +207,8 @@ actions:
 
 Agents created from WhatsApp will typically end with `notify_whatsapp` so results stay in WhatsApp.  
 If you want multi‑channel behavior, you can mix `notify_telegram` and `notify_whatsapp` actions in the same YAML config.
+
+</details>
 
 ---
 
