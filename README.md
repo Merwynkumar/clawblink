@@ -8,10 +8,11 @@ You: "Every morning at 8am, check BBC news and send me a digest."
 You: "Every 10 minutes, explain me a Python concept with a simple example."
 You: "Monitor my GitHub repo for new issues and summarize them."
 
-ClawBlink: Agent created. Trigger: scheduled (daily at 08:00) | actions: http_request → llm_analyze → notify
+ClawBlink: Agent created.
+  Trigger: scheduled (daily 08:00) | actions: http_request → llm_analyze → notify
 ```
 
-## Highlights
+## ✨ Highlights
 
 - **No‑code agents** – One chat message → working automation. News, prices, GitHub, reminders, tutorials.
 - **Chat‑first** – Create, run, and control agents from **Telegram or WhatsApp**. No web UI.
@@ -22,7 +23,7 @@ ClawBlink: Agent created. Trigger: scheduled (daily at 08:00) | actions: http_re
 
 ---
 
-## CLI quick commands
+## ⌨️ CLI quick commands
 
 ```bash
 # Telegram
@@ -36,31 +37,32 @@ clawblink whatsapp-bridge     # Python bridge
 
 ---
 
-## News
+## 📰 News
 
 - **2025‑03‑10** – **ClawBlink launched.** No-code AI agents from Telegram and WhatsApp – describe what you want in plain English, get running automations in under a minute.
 - **2025‑03‑09** – Smart agent creation: URLs validated at creation time, intent-based URLs (news, Python, prices, weather), and chat-readable outputs so every agent delivers useful results.
 
 ---
 
-## Why ClawBlink?
+## 💡 Why ClawBlink?
 
-ClawBlink is inspired by [nanobot](https://github.com/HKUDS/nanobot) and similar projects – focused on **one thing**: spin up useful background agents from chat, in minutes, with zero config.
+ClawBlink is inspired by projects like [nanobot](https://github.com/HKUDS/nanobot), OpenClaw, and OneClaw – but focused on **one thing**: let anyone spin up useful background agents from chat, in minutes, without learning a new framework.
 
-| | nanobot | **ClawBlink** |
-|---|---|---|
-| Create agents | Write Python skills | **Describe in plain English** |
-| Where it lives | CLI + channels | **Your Telegram bot and/or WhatsApp** |
-| Setup | Install + configure | **`pip install` + `.env`** |
-| Target user | Developers | **Anyone who can chat** |
-| Codebase | ~4k+ LOC | **Small, hackable** |
-| Cost | Free | **Free, self‑hosted** |
+| | nanobot | OpenClaw / agent frameworks | OneClaw-style SaaS | ClawBlink |
+|---|---|---|---|---|
+| Create agents | Write Python skills | Design workflows / config | Click UI, pay monthly | Describe in plain English |
+| Where it lives | CLI + many channels | Custom infra | Hosted dashboard | Your own Telegram bot and/or WhatsApp number |
+| Setup | Install + configure | Multi-service setup | Account + payment | `pip install` + `.env` |
+| Target user | Developers | Advanced devs | Anyone (SaaS) | Anyone who can chat |
+| Codebase | ~4k+ LOC | Hundreds of k LOC | Closed source | ~750 LOC |
+| Cost | Free | Free (but complex) | $/month | Free, self-hosted |
 
-If you want a **simple, no-code agent builder from chat**, ClawBlink is for you.
+- If you want an **ultra-flexible research agent platform**, check out [nanobot](https://github.com/HKUDS/nanobot).
+- If you want a **simple, forkable, no-code agent builder from chat**, ClawBlink is for you.
 
 ---
 
-## What ClawBlink Can Do
+## 🎯 What ClawBlink Can Do
 
 Send a message to your **Telegram bot** or **WhatsApp** – ClawBlink turns it into a real agent.
 
@@ -79,7 +81,7 @@ ClawBlink uses an LLM to turn your message into a YAML config. You get "Building
 
 ---
 
-## Install
+## 📦 Install
 
 ```bash
 git clone https://github.com/Merwynkumar/clawblink.git
@@ -99,7 +101,7 @@ Update later: `git pull` then `pip install -e .`
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 <details>
 <summary><strong>Telegram (recommended)</strong></summary>
@@ -131,7 +133,7 @@ Agents created from WhatsApp are stored in `configs/whatsapp/` and only appear i
 
 ---
 
-## How It Works
+## ⚙️ How It Works
 
 ```text
 User message     "Every morning, BBC news digest"
@@ -156,7 +158,7 @@ Data is always fetched by `http_request` first; the LLM only sees that text. No 
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
 clawblink/
@@ -184,7 +186,7 @@ clawblink/
 
 ---
 
-## Triggers
+## ⏱️ Triggers
 
 | Type | Description | Config |
 |---|---|---|
@@ -194,7 +196,7 @@ clawblink/
 
 ---
 
-## Actions
+## 🔧 Actions
 
 | Type | Description |
 |---|---|
@@ -207,18 +209,21 @@ Pattern: `http_request` → optional `llm_analyze` → `notify_telegram` or `not
 
 ---
 
-## Dependencies
+## 📋 Dependencies
 
-- `requests` · `python-telegram-bot` · `pyyaml` · `flask` (WhatsApp bridge)
+- **requests** – HTTP client
+- **python-telegram-bot** – Telegram bot API
+- **pyyaml** – YAML config parsing
+- **flask** – WhatsApp Web bridge server
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 PRs welcome. Ideas: new triggers (RSS, webhooks), new actions (Slack, email), more intent→URL mappings, example agents. If you build something with ClawBlink, share it in an issue or PR.
 
 ---
 
-## License
+## 📄 License
 
 MIT
