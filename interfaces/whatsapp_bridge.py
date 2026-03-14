@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 import requests
@@ -59,7 +60,13 @@ def create_app() -> Flask:
 
     llm = get_provider()
     builder = ConfigBuilder(provider=llm)
-    runner = AgentRunner(llm=llm)
+
+    # Use a WhatsApp-specific configs directory so Telegram/WhatsApp
+    # agents don't share YAML files or /list output.
+    root = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    whatsapp_configs = root / "configs" / "whatsapp"
+
+    runner = AgentRunner(llm=llm, configs_dir=whatsapp_configs)
     runner.load_saved_configs()
     runner.start_scheduler()
 
@@ -126,13 +133,14 @@ def create_app() -> Flask:
             lines = ["Your agents:\n"]
             for a in agents:
                 status = "running" if a["running"] else "stopped"
-                interval = (
-                    f"every {a['interval_minutes']}min"
-                    if a["interval_minutes"]
-                    else "manual"
-                )
+                if a.get("time_local"):
+                    sched = f"daily at {a['time_local']}"
+                elif a.get("interval_minutes"):
+                    sched = f"every {a['interval_minutes']}min"
+                else:
+                    sched = "manual"
                 lines.append(
-                    f"- {a['name']} ({a['trigger_type']}, {interval}) "
+                    f"- {a['name']} ({a['trigger_type']}, {sched}) "
                     f"- {status} - {a['run_count']} runs"
                 )
             _send_whatsapp(from_number, "\n".join(lines))
@@ -159,10 +167,12 @@ def create_app() -> Flask:
                 _send_whatsapp(from_number, "Usage: /run <agent-name>")
                 return jsonify({"ok": True})
             name = parts[1].strip()
-            if runner.manual_trigger(name):
+            if runner.get_config(name):
                 _send_whatsapp(
-                    from_number, f"Agent '{name}' triggered manually. Results coming soon..."
+                    from_number,
+                    f"Running '{name}'… You'll get the result in a moment.",
                 )
+                runner.manual_trigger(name)
             else:
                 _send_whatsapp(
                     from_number,
@@ -194,22 +204,25 @@ def create_app() -> Flask:
                 return jsonify({"ok": True})
             lines = [f"ClawBlink: {len(agents)} agent(s) running\n"]
             for a in agents:
+                sch = (
+                    f" daily at {a['time_local']}"
+                    if a.get("time_local")
+                    else (f" every {a['interval_minutes']}min" if a.get("interval_minutes") else "")
+                )
                 lines.append(
                     f"- {a['name']}\n"
-                    f"  Trigger: {a['trigger_type']}"
-                    + (
-                        f" (every {a['interval_minutes']}min)"
-                        if a["interval_minutes"]
-                        else ""
-                    )
-                    + f"\n  Runs: {a['run_count']}"
-                    + f"\n  Status: {'active' if a['running'] else 'stopped'}"
+                    f"  Trigger: {a['trigger_type']}{sch}\n"
+                    f"  Runs: {a['run_count']}\n"
+                    f"  Status: {'active' if a['running'] else 'stopped'}"
                 )
             _send_whatsapp(from_number, "\n".join(lines))
             return jsonify({"ok": True})
 
         # Otherwise: treat as a request to create a new agent.
-        _send_whatsapp(from_number, "Building your agent...")
+        _send_whatsapp(
+            from_number,
+            "Building your agent… (usually 30–60s; agent creation uses the LLM to turn your message into a config)",
+        )
 
         try:
             config = builder.build(text, chat_id=None)
@@ -219,7 +232,13 @@ def create_app() -> Flask:
         except Exception as e:  # pragma: no cover - defensive
             logger.exception("WhatsApp config build failed")
             err = str(e).lower()
-            if "api_key" in err or "apikey" in err or "401" in err or "403" in err:
+            if "timeout" in err or "timed out" in err:
+                _send_whatsapp(
+                    from_number,
+                    "Agent creation timed out (LLM took too long). Try again, or use a faster/smaller model "
+                    "(e.g. Ollama: ollama run phi3) or set GEMINI_API_KEY in .env for cloud.",
+                )
+            elif "api_key" in err or "apikey" in err or "401" in err or "403" in err:
                 _send_whatsapp(
                     from_number,
                     "LLM API error. Check your API key in .env file.\n"
@@ -259,11 +278,15 @@ def create_app() -> Flask:
         trigger = config.get("trigger", {})
         t_type = trigger.get("type", "manual")
         interval = trigger.get("interval_minutes", 0)
+        time_local = trigger.get("time_local") or ""
 
         desc = config.get("description", "No description")
-        schedule_str = (
-            f"every {interval} minutes" if interval else f"manual (/run {name})"
-        )
+        if time_local:
+            schedule_str = f"daily at {time_local}"
+        elif interval:
+            schedule_str = f"every {interval} minutes"
+        else:
+            schedule_str = f"manual (/run {name})"
 
         _send_whatsapp(
             from_number,

@@ -2,6 +2,7 @@
 
 import logging
 import os
+from pathlib import Path
 import yaml
 
 from providers import get_provider
@@ -27,7 +28,13 @@ def run_telegram_bot() -> None:
 
     llm = get_provider()
     builder = ConfigBuilder(provider=llm)
-    runner = AgentRunner(llm=llm)
+
+    # Use a Telegram-specific configs directory so Telegram and WhatsApp
+    # agents are stored and listed separately.
+    root = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    telegram_configs = root / "configs" / "telegram"
+
+    runner = AgentRunner(llm=llm, configs_dir=telegram_configs)
     runner.load_saved_configs()
     runner.start_scheduler()
 
@@ -59,8 +66,12 @@ def run_telegram_bot() -> None:
         lines = []
         for a in agents:
             status = "running" if a["running"] else "stopped"
-            interval = f"every {a['interval_minutes']}min" if a["interval_minutes"] else "manual"
-            lines.append(f"  {a['name']} ({a['trigger_type']}, {interval}) - {status} - {a['run_count']} runs")
+            sched = (
+                f"daily at {a['time_local']}"
+                if a.get("time_local")
+                else (f"every {a['interval_minutes']}min" if a.get("interval_minutes") else "manual")
+            )
+            lines.append(f"  {a['name']} ({a['trigger_type']}, {sched}) - {status} - {a['run_count']} runs")
         await update.message.reply_text("Your agents:\n\n" + "\n".join(lines))
 
     async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -84,8 +95,11 @@ def run_telegram_bot() -> None:
             await update.message.reply_text("Usage: /run <agent-name>")
             return
         name = args[1].strip()
-        if runner.manual_trigger(name):
-            await update.message.reply_text(f"Agent '{name}' triggered manually. Results coming soon...")
+        if runner.get_config(name):
+            await update.message.reply_text(
+                f"Running '{name}'… You'll get the result in a moment."
+            )
+            runner.manual_trigger(name)
         else:
             await update.message.reply_text(f"Agent '{name}' not found. Use /list to see running agents.")
 
@@ -113,12 +127,16 @@ def run_telegram_bot() -> None:
             return
         lines = [f"ClawBlink: {len(agents)} agent(s) running\n"]
         for a in agents:
+            sch = (
+                f" daily at {a['time_local']}"
+                if a.get("time_local")
+                else (f" every {a['interval_minutes']}min" if a.get("interval_minutes") else "")
+            )
             lines.append(
                 f"  {a['name']}\n"
-                f"    Trigger: {a['trigger_type']}"
-                + (f" (every {a['interval_minutes']}min)" if a['interval_minutes'] else "")
-                + f"\n    Runs: {a['run_count']}"
-                + f"\n    Status: {'active' if a['running'] else 'stopped'}"
+                f"    Trigger: {a['trigger_type']}{sch}\n"
+                f"    Runs: {a['run_count']}\n"
+                f"    Status: {'active' if a['running'] else 'stopped'}"
             )
         await update.message.reply_text("\n".join(lines))
 
@@ -130,7 +148,9 @@ def run_telegram_bot() -> None:
             return
         chat_id = str(update.message.chat_id)
 
-        await update.message.reply_text("Building your agent...")
+        await update.message.reply_text(
+            "Building your agent… (usually 30–60s; agent creation uses the LLM to turn your message into a config)"
+        )
 
         try:
             config = builder.build(text, chat_id=chat_id)
@@ -140,7 +160,12 @@ def run_telegram_bot() -> None:
         except Exception as e:
             logger.exception("Config build failed")
             err = str(e).lower()
-            if "api_key" in err or "apikey" in err or "401" in err or "403" in err:
+            if "timeout" in err or "timed out" in err:
+                await update.message.reply_text(
+                    "Agent creation timed out (LLM took too long). Try again, or use a faster/smaller model "
+                    "(e.g. Ollama: ollama run phi3) or set GEMINI_API_KEY in .env for cloud."
+                )
+            elif "api_key" in err or "apikey" in err or "401" in err or "403" in err:
                 await update.message.reply_text(
                     "LLM API error. Check your API key in .env file.\n"
                     "Get a free Gemini key at: https://aistudio.google.com/apikey"
@@ -168,9 +193,15 @@ def run_telegram_bot() -> None:
         trigger = config.get("trigger", {})
         t_type = trigger.get("type", "manual")
         interval = trigger.get("interval_minutes", 0)
+        time_local = trigger.get("time_local") or ""
 
         desc = config.get("description", "No description")
-        schedule_str = f"every {interval} minutes" if interval else "manual (/run {name})"
+        if time_local:
+            schedule_str = f"daily at {time_local}"
+        elif interval:
+            schedule_str = f"every {interval} minutes"
+        else:
+            schedule_str = f"manual (/run {name})"
 
         await update.message.reply_text(
             f"Agent created!\n\n"

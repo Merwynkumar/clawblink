@@ -1,0 +1,9 @@
+name: remind-drink-water
+description: Remind to drink water every 5 minutes
+trigger:
+  type: scheduled
+  interval_minutes: 5
+actions:
+- type: notify_whatsapp
+  message: Remember to drink water!
+  to: 265995998519534@lid

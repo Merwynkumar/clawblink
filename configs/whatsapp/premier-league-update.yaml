@@ -1,0 +1,19 @@
+name: premier-league-update
+description: Provides the latest update on English Premier League football matches
+trigger:
+  type: scheduled
+  interval_minutes: 1440
+  time_local: "08:00"
+  source: generic
+actions:
+- type: http_request
+  method: GET
+  url: https://www.bbc.com/sport/football/scores-fixtures?comp=premier-league
+  output: raw_data
+- type: llm_analyze
+  prompt: 'Here is data on English Premier League matches: {raw_data}. Summarize the
+    latest updates.'
+  output: analysis
+- type: notify_whatsapp
+  message: '{analysis}'
+  to: 265995998519534@lid

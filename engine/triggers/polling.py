@@ -65,13 +65,24 @@ class PollingTrigger:
             logger.warning("URL poll failed for %s: %s", self.url, e)
             return
 
-        if self._last_hash is not None and content_hash != self._last_hash:
+        # First successful fetch: always fire once so polling/url_check/generic
+        # agents have an initial run, then only fire on changes thereafter.
+        if self._last_hash is None:
+            self._last_hash = content_hash
             self.callback({
                 "data": resp.text[:1000],
                 "url": self.url,
                 "source": "url_check",
             })
-        self._last_hash = content_hash
+            return
+
+        if content_hash != self._last_hash:
+            self._last_hash = content_hash
+            self.callback({
+                "data": resp.text[:1000],
+                "url": self.url,
+                "source": "url_check",
+            })
 
     def _poll_generic_url(self) -> None:
         if self.url:

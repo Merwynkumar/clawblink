@@ -1,11 +1,23 @@
 """HTTP Request action: makes a GET/POST request and stores the response."""
 
 import logging
+import os
 import re
 import requests as http_lib
 from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_headers(headers: Dict[str, Any]) -> Dict[str, str]:
+    """Resolve header values. Use env:VAR_NAME to read from os.environ."""
+    out = {}
+    for k, v in headers.items():
+        if isinstance(v, str) and v.startswith("env:"):
+            out[k] = os.environ.get(v[4:].strip(), "")
+        else:
+            out[k] = str(v) if v is not None else ""
+    return out
 
 
 def _fill_template(template: str, variables: Dict[str, Any]) -> str:
@@ -39,7 +51,7 @@ def execute(action: Dict[str, Any], variables: Dict[str, Any]) -> Dict[str, Any]
     """Make an HTTP request. Stores response text in output variable."""
     url = _fill_template(action.get("url", ""), variables)
     method = action.get("method", "GET").upper()
-    headers = dict(action.get("headers", {}))
+    headers = _resolve_headers(action.get("headers", {}))
     if "User-Agent" not in headers:
         headers["User-Agent"] = DEFAULT_USER_AGENT
     output_key = action.get("output", "data")

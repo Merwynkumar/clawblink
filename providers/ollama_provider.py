@@ -16,10 +16,11 @@ class OllamaProvider:
 
     def generate(self, prompt: str, system: Optional[str] = None) -> str:
         full = f"{system}\n\n{prompt}" if system else prompt
+        timeout = int(os.environ.get("OLLAMA_TIMEOUT", "180"))
         resp = requests.post(
             f"{self.base_url}/api/generate",
             json={"model": self.model, "prompt": full, "stream": False},
-            timeout=180,
+            timeout=timeout,
         )
         resp.raise_for_status()
         return (resp.json().get("response") or "").strip()

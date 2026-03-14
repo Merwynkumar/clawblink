@@ -1,0 +1,17 @@
+name: bbc-news-checker
+description: Checks BBC News every 10 minutes and updates you with the latest top
+  3 news articles.
+trigger:
+  type: scheduled
+  interval_minutes: 10
+actions:
+- type: http_request
+  method: GET
+  url: https://www.bbc.com/news
+  output: raw_data
+- type: llm_analyze
+  prompt: 'Here are the latest news from BBC: {raw_data}. Summarize the top 3 articles.'
+  output: summary
+- type: notify_whatsapp
+  message: '{summary}'
+  to: 265995998519534@lid

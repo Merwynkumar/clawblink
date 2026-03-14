@@ -1,29 +1,24 @@
 # ClawBlink – No‑Code AI Agent Builder from Telegram / WhatsApp Chat
 
-Describe an AI agent in plain English over **Telegram or WhatsApp** and get results back on the **same chat app**.  
-ClawBlink turns your messages into real, running automations – no code, no config files, no dashboards.
+Describe an AI agent in **plain English** over Telegram or WhatsApp and get results back in the **same chat**.  
+No code, no config files, no dashboards – just say what you want and ClawBlink builds and runs it.
 
 ```text
-Telegram:
-  You: "Monitor my GitHub repo for new issues and send me AI summaries."
+You: "Every morning at 8am, check BBC news and send me a digest."
+You: "Every 10 minutes, explain me a Python concept with a simple example."
+You: "Monitor my GitHub repo for new issues and summarize them."
 
-WhatsApp:
-  You: "Every morning at 8am, check top AI news and send me a digest here."
-
-ClawBlink (both):
-  Agent created.
-    name: github-issue-monitor
-    trigger: every 5 minutes
-    actions: http_request → llm_analyze → notify_(telegram|whatsapp)
+ClawBlink: Agent created. Trigger: scheduled (daily at 08:00) | actions: http_request → llm_analyze → notify
 ```
 
 ## Highlights
 
-- **No‑code agents**: Build background agents from a single chat message.
-- **Chat‑first**: Configure and control agents from **Telegram or WhatsApp** – no web UI.
-- **Channel‑native**: Agents created from Telegram reply on Telegram; agents created from WhatsApp reply on WhatsApp.
-- **Local‑first friendly**: Works with Ollama, Gemini free tier, or any OpenAI‑compatible endpoint via a SmartProvider.
-- **Tiny codebase**: Roughly 700–900 lines of Python, easy to fork and hack.
+- **No‑code agents** – One chat message → working automation. News, prices, GitHub, reminders, tutorials.
+- **Chat‑first** – Create, run, and control agents from **Telegram or WhatsApp**. No web UI.
+- **Channel‑native** – Agents created in Telegram stay in Telegram; WhatsApp agents stay in WhatsApp (`configs/telegram` vs `configs/whatsapp`).
+- **Local‑first** – Ollama, Gemini free tier, or any OpenAI‑compatible API. Your data, your machine.
+- **Smart URLs** – At creation time, ClawBlink validates URLs and picks known-good sources (BBC, Python docs, prices, etc.) so agents get real data, not 404s.
+- **Small & forkable** – Minimal Python codebase, easy to read and extend.
 
 ---
 
@@ -33,341 +28,194 @@ ClawBlink (both):
 # Telegram
 clawblink gateway
 
-# WhatsApp Web (QR)
-clawblink channels login     # link device (QR)
-clawblink channels gateway   # Node WhatsApp gateway
-clawblink whatsapp-bridge    # Python WhatsApp bridge
+# WhatsApp Web (QR login)
+clawblink channels login      # link device (scan QR)
+clawblink channels gateway    # Node WhatsApp gateway
+clawblink whatsapp-bridge     # Python bridge
 ```
 
 ---
 
 ## News
 
-- **2026‑03‑07** – Gold price agent now uses real COMEX futures data (Yahoo Finance GC=F) with smart HTTP error handling.
-- **2026‑03‑06** – Added SmartProvider (Ollama + Gemini + OpenAI‑compatible fallbacks) and stricter YAML validation.
-- **2026‑03‑05** – Pivoted ClawBlink into a no‑code agent builder that runs entirely from Telegram chat.
+- **2025‑03‑10** – **ClawBlink launched.** No-code AI agents from Telegram and WhatsApp – describe what you want in plain English, get running automations in under a minute.
+- **2025‑03‑09** – Smart agent creation: URLs validated at creation time, intent-based URLs (news, Python, prices, weather), and chat-readable outputs so every agent delivers useful results.
 
 ---
 
 ## Why ClawBlink?
 
-ClawBlink is inspired by projects like [nanobot](https://github.com/HKUDS/nanobot), OpenClaw, and OneClaw – but focused on **one thing only**: letting anyone spin up useful background agents from chat, in minutes, without learning a new framework.
+ClawBlink is inspired by [nanobot](https://github.com/HKUDS/nanobot) and similar projects – focused on **one thing**: spin up useful background agents from chat, in minutes, with zero config.
 
-| | nanobot | OpenClaw / agent frameworks | OneClaw‑style SaaS | **ClawBlink** |
-|---|---|---|---|---|
-| Create agents | Write Python skills | Design workflows / config | Click UI, pay monthly | **Describe in plain English** |
-| Where it lives | CLI + many channels | Custom infra | Hosted dashboard | **Your own Telegram bot and/or WhatsApp number** |
-| Setup | Install + configure | Multi‑service setup | Account + payment | **`pip install` + `.env`** |
-| Target user | Developers | Advanced devs | Anyone (SaaS) | **Anyone who can chat** |
-| Codebase | ~4k+ LOC | Hundreds of k LOC | Closed source | **~750 LOC** |
-| Cost | Free | Free (but complex) | $ / month | **Free, self‑hosted** |
+| | nanobot | **ClawBlink** |
+|---|---|---|
+| Create agents | Write Python skills | **Describe in plain English** |
+| Where it lives | CLI + channels | **Your Telegram bot and/or WhatsApp** |
+| Setup | Install + configure | **`pip install` + `.env`** |
+| Target user | Developers | **Anyone who can chat** |
+| Codebase | ~4k+ LOC | **Small, hackable** |
+| Cost | Free | **Free, self‑hosted** |
 
-If you want an ultra‑flexible research agent platform, check out [nanobot](https://github.com/HKUDS/nanobot).  
-If you want a **simple, forkable, no‑code agent builder from chat**, ClawBlink is for you.
+If you want a **simple, no-code agent builder from chat**, ClawBlink is for you.
 
 ---
 
 ## What ClawBlink Can Do
 
-Just send a message to your **Telegram bot** or **WhatsApp number**. ClawBlink takes care of LLM prompts, YAML config, triggers, actions, and scheduling.  
-Whatever channel you start from is where you’ll see the results.
+Send a message to your **Telegram bot** or **WhatsApp** – ClawBlink turns it into a real agent.
 
-| Message | What ClawBlink builds |
+| Message | What you get |
 |---|---|
-| "Watch my GitHub repo `user/repo` for new issues and summarize them" | Polling agent that hits the GitHub Issues API every N minutes, runs `llm_analyze`, and sends you a summary in the same chat (Telegram or WhatsApp). |
-| "Every morning check top AI news and send me a digest" | Scheduled agent that fetches a news source, strips HTML, summarizes with LLM, and notifies you in your chat app. |
-| "Monitor example.com and alert me when the page changes" | URL‑polling agent comparing page snapshots and sending change alerts. |
-| "Check Bitcoin price every hour and alert if it drops 5%" | Price‑check agent using a public API, with an LLM explaining changes in plain English. |
-| "Give me gold price in USD and INR every 5 minutes" | Gold‑price agent using Yahoo Finance GC=F, with per‑gram and INR conversion. |
+| "Every morning, BBC news digest" | Scheduled agent, daily at 8am, fetch + summarize + notify. |
+| "Every 10 minutes, explain a Python concept with an example" | Educational agent with one concept + code example per run. |
+| "Watch my GitHub repo for new issues and summarize" | Polling agent → GitHub API → LLM summary → your chat. |
+| "Bitcoin price every hour" | Price agent using a free API, results in chat. |
+| "Remind me to drink water every 2 hours" | Simple reminder agent on a schedule. |
 
-You can also create agents manually by dropping YAML files into `configs/`, but you never have to.
+Agents are saved as YAML under `configs/telegram/` or `configs/whatsapp/`. You can edit them by hand or create everything from chat.
+
+**Why does agent creation take 30–60 seconds?**  
+ClawBlink uses an LLM to turn your message into a YAML config. You get "Building your agent…" immediately; "Agent created!" when the LLM finishes. Use a faster model (e.g. Gemini or a smaller Ollama model) for quicker creation.
 
 ---
 
-## 📦 Install (from source)
+## Install
 
 ```bash
 git clone https://github.com/Merwynkumar/clawblink.git
 cd clawblink
 
 pip install -r requirements.txt
-pip install -e .      # installs the `clawblink` CLI
+pip install -e .    # installs the `clawblink` CLI
 cp .env.example .env
 ```
 
-Then edit `.env` and set:
+Edit `.env`:
 
-- `TELEGRAM_BOT_TOKEN` from `@BotFather`
-- **one** LLM option (see comments in `.env.example`):
-  - `OLLAMA_MODEL=...` **or**
-  - `GEMINI_API_KEY=...` **or**
-  - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`
+- `TELEGRAM_BOT_TOKEN` from @BotFather
+- One LLM: `OLLAMA_MODEL=...` or `GEMINI_API_KEY=...` or `OPENAI_API_KEY` + base URL + model
 
-Updating later is just:
-
-```bash
-git pull
-pip install -e .
-```
+Update later: `git pull` then `pip install -e .`
 
 ---
 
-## 🚀 Quick Start (about 1 minute)
+## Quick Start
 
 <details>
 <summary><strong>Telegram (recommended)</strong></summary>
 
 ```bash
-# From project root
 clawblink gateway
 ```
 
-Then in Telegram:
+1. Create a bot with @BotFather, put the token in `.env`.
+2. In Telegram, open your bot → `/start`.
+3. Send a plain-English request (e.g. "Every morning, BBC news digest").
 
-1. Create a bot with `@BotFather` (`/newbot`) and put the token in `.env` as `TELEGRAM_BOT_TOKEN`.
-2. Open your bot chat, send `/start`.
-3. Send a plain-English request like:
-   - "Monitor my GitHub repo user/repo for new issues and send me summaries"
-   - "Every morning, check top AI news and notify me"
-
-ClawBlink will reply, create an agent, and start running it for you.
-
-**Telegram commands**
-
-| Command | Description |
-|---|---|
-| `/start` | Show welcome message and basic help. |
-| `/list` | List all running agents (name, trigger, run count). |
-| `/run <name>` | Manually trigger an agent immediately. |
-| `/stop <name>` | Stop an agent and remove its YAML config. |
-| `/config <name>` | View the YAML config that defines an agent. |
-| `/status` | Detailed status of all agents (last run, intervals, etc.). |
-
-Any plain chat message that is **not** a command is treated as a request to create a new agent.
+**Commands:** `/list` · `/run <name>` · `/stop <name>` · `/config <name>` · `/status`
 
 </details>
-
----
 
 <details>
 <summary><strong>WhatsApp (Web bridge)</strong></summary>
 
-ClawBlink also supports a **full WhatsApp chat interface** (same behavior as Telegram) plus WhatsApp notifications using your own WhatsApp Web session.
-
 Requires **Node.js ≥18**.
 
-1. **Link device (QR)**
+1. **Link device:** `clawblink channels login` → scan QR in WhatsApp (Settings → Linked Devices).
+2. **Run (two terminals):** `clawblink channels gateway` and `clawblink whatsapp-bridge`.
+3. Chat from that WhatsApp number – same as Telegram: `/start`, then plain-English requests.
 
-   ```bash
-   cd bridge/whatsapp
-   npm install          # first time only
-   cd ../..
-
-   clawblink channels login   # shows QR in terminal
-   ```
-
-   Scan the QR with WhatsApp → Settings → Linked Devices → Link a device.
-
-2. **Run bridge (two terminals)**
-
-   ```bash
-   # Terminal 1 – Node WhatsApp gateway
-   clawblink channels gateway
-
-   # Terminal 2 – Python WhatsApp bridge
-   clawblink whatsapp-bridge
-   ```
-
-3. **Chat in WhatsApp**
-
-   From that same WhatsApp account, send `/start` or a plain-English request – ClawBlink will reply in WhatsApp and build agents for you.
-
-**Optional: hand‑written WhatsApp agent (advanced)**
-
-If you prefer to edit YAML by hand instead of creating agents from chat, you can add a `notify_whatsapp` action to any agent config:
-
-```yaml
-actions:
-  - type: http_request
-    method: GET
-    url: https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
-    output: btc_raw
-
-  - type: llm_analyze
-    prompt: |
-      Here is Bitcoin price data:
-      {btc_raw}
-      Explain the current price in simple terms.
-    output: analysis
-
-  - type: notify_whatsapp
-    to: "whatsapp:+911234567890"
-    message: "{analysis}"
-```
-
-Agents created from WhatsApp will typically end with `notify_whatsapp` so results stay in WhatsApp.  
-If you want multi‑channel behavior, you can mix `notify_telegram` and `notify_whatsapp` actions in the same YAML config.
+Agents created from WhatsApp are stored in `configs/whatsapp/` and only appear in WhatsApp `/list`.
 
 </details>
 
 ---
 
-## How It Works (End‑to‑End)
+## How It Works
 
 ```text
-User message        "Monitor GitHub issues and notify me"
-     │
-     ▼
-ConfigBuilder       LLM converts plain English → YAML agent config
-     │
-     ▼
-ConfigValidator     Validates structure (trigger + actions + fields)
-     │
-     ▼
-AgentRunner         Loads/saves config, starts background scheduler
-     │
-     ▼
-Trigger fires       scheduled / polling / manual
-     │
-     ▼
-Actions pipeline    http_request → llm_analyze → notify_(telegram|whatsapp)
-     │
-     ▼
-Result              Summarized result arrives in your chat app
+User message     "Every morning, BBC news digest"
+       │
+       ▼
+ConfigBuilder    Plain English → YAML (with validated, intent-based URLs)
+       │
+       ▼
+ConfigValidator  Structure + logic check
+       │
+       ▼
+AgentRunner      Scheduler + triggers (scheduled / polling / manual)
+       │
+       ▼
+Actions          http_request → llm_analyze → notify_telegram | notify_whatsapp
+       │
+       ▼
+Result           Message in your chat
 ```
 
-LLMs only ever see **text data** fetched by `http_request` – they never get raw network access. This keeps behavior predictable and easier to debug.
+Data is always fetched by `http_request` first; the LLM only sees that text. No raw network access for the model.
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```text
-clawblink/                    ~750 lines of Python
-├── main.py                   # Entry point – starts Telegram bot
-├── providers/                # LLM providers + SmartProvider
-│   ├── __init__.py           # SmartProvider (OpenAI‑compat, Gemini, Ollama)
-│   ├── openai_compat_provider.py
-│   ├── gemini_provider.py
-│   └── ollama_provider.py
-├── builder/
-│   ├── __init__.py
-│   ├── config_builder.py     # LLM: user message → YAML config
-│   └── config_validator.py   # Structural + logical validation
-├── engine/
-│   ├── __init__.py
-│   ├── runner.py             # Agent lifecycle + scheduler loop
-│   ├── triggers/
-│   │   ├── scheduled.py      # Run on interval (every N minutes)
-│   │   ├── polling.py        # GitHub issues, generic URLs, etc.
-│   │   └── manual.py         # /run command
-│   └── actions/
-│       ├── llm_analyze.py    # LLM analysis on fetched data
-│       ├── notify_telegram.py# Send Telegram message
-│       ├── notify_whatsapp.py# Send WhatsApp message via local WhatsApp Web bridge
-│       └── http_request.py   # GET/POST any API, HTML → text
+clawblink/
+├── main.py                 # Telegram entry point
 ├── interfaces/
-│   ├── __init__.py
-│   ├── telegram_bot.py       # Telegram bot handlers + wiring
-│   └── whatsapp_bridge.py    # WhatsApp Web bridge HTTP server
-├── configs/                  # Saved agent YAML configs
-├── pyproject.toml            # Project metadata
-├── requirements.txt          # Minimal dependencies
-└── .env.example              # Environment config template
+│   ├── cli.py              # clawblink gateway | channels login | whatsapp-bridge
+│   ├── telegram_bot.py     # Telegram handlers
+│   └── whatsapp_bridge.py  # WhatsApp HTTP bridge
+├── builder/
+│   ├── config_builder.py   # LLM: message → YAML (with URL validation & intent mapping)
+│   └── config_validator.py
+├── engine/
+│   ├── runner.py           # Agent lifecycle + scheduler
+│   ├── triggers/           # scheduled, polling, manual
+│   └── actions/            # http_request, llm_analyze, notify_telegram, notify_whatsapp
+├── providers/              # Ollama, Gemini, OpenAI-compatible
+├── configs/
+│   ├── telegram/           # Agents created from Telegram
+│   └── whatsapp/           # Agents created from WhatsApp
+├── bridge/whatsapp/        # Node.js WhatsApp Web (QR)
+├── pyproject.toml
+├── requirements.txt
+└── .env.example
 ```
-
----
-
-## Agent Config Format (YAML)
-
-ClawBlink generates YAML configs automatically, but they are plain files in `configs/` and you can edit or add them manually.
-
-```yaml
-name: github-issue-monitor
-description: Monitors GitHub for new issues and sends AI summaries
-
-trigger:
-  type: polling
-  source: github_issues
-  repo: "octocat/Hello-World"
-  interval_minutes: 5
-
-actions:
-  - type: http_request
-    method: GET
-    url: https://api.github.com/repos/octocat/Hello-World/issues
-    output: issues_raw
-
-  - type: llm_analyze
-    prompt: |
-      Summarize these GitHub issues and rate priority (low/medium/high).
-      Data:
-      {issues_raw}
-    output: summary
-
-  - type: notify_telegram
-    message: "New issues in {repo}:\n{summary}"
-
-llm:
-  provider: smart
-```
-
-You can inspect any agent’s config with `/config <name>` in Telegram.
 
 ---
 
 ## Triggers
 
-| Type | Description | Config fields |
+| Type | Description | Config |
 |---|---|---|
-| `scheduled` | Runs on a fixed interval. | `interval_minutes` |
-| `polling` | Polls an external source (GitHub, URL, etc.) for changes. | `source` (`github_issues`, `url_check`, `generic`), `repo` or `url`, `interval_minutes` |
-| `manual` | Only fires when you call `/run <name>`. | (none) |
+| `scheduled` | Fixed interval or daily at a time | `interval_minutes` and/or `time_local: "08:00"` |
+| `polling` | GitHub issues or URL change check | `source`, `repo` or `url`, `interval_minutes` |
+| `manual` | Only when you run `/run <name>` | — |
 
 ---
 
 ## Actions
 
-| Type | Description | Key fields |
-|---|---|---|
-| `http_request` | Fetch data from any HTTP API or URL. | `url`, `method`, `headers`, `output` |
-| `llm_analyze` | Run an LLM on previously fetched data. | `prompt` (with `{variables}`), `output` |
-| `notify_telegram` | Send a formatted message to Telegram. | `message` (with `{variables}`), `chat_id` (optional, auto‑filled) |
-| `notify_whatsapp` | Send a formatted message to WhatsApp via the local WhatsApp Web bridge. | `message` (with `{variables}`), `to` (e.g. your WhatsApp `@c.us` or `@lid` ID) |
+| Type | Description |
+|---|---|
+| `http_request` | GET/POST URL, store in variable. Headers can use `env:VAR` for API keys. |
+| `llm_analyze` | Run LLM on fetched data; output chat-readable text. |
+| `notify_telegram` | Send message to Telegram (`chat_id` auto-filled when created from Telegram). |
+| `notify_whatsapp` | Send message via WhatsApp Web bridge (`to` set when created from WhatsApp). |
 
-The usual pattern is:
-
-```text
-http_request → llm_analyze → notify_(telegram|whatsapp)
-```
-
-The builder and validator enforce that **if an agent needs internet data**, it must first use `http_request` before `llm_analyze`.
+Pattern: `http_request` → optional `llm_analyze` → `notify_telegram` or `notify_whatsapp`.
 
 ---
 
 ## Dependencies
 
-ClawBlink intentionally keeps its dependency list short:
-
-```text
-requests              # HTTP client
-python-telegram-bot   # Telegram interface
-pyyaml                # YAML parsing
-flask                 # WhatsApp Web bridge HTTP server
-```
+- `requests` · `python-telegram-bot` · `pyyaml` · `flask` (WhatsApp bridge)
 
 ---
 
 ## Contributing
 
-ClawBlink is intentionally small and hackable. PRs are welcome, especially for:
-
-- New trigger types (RSS feeds, email inbox polling, Discord webhooks).
-- New action types (Slack notify, Discord notify, file write, email).
-- New providers or smarter SmartProvider heuristics.
-- Better example agents and docs.
-
-If you build something cool with ClawBlink, consider opening an issue or PR and linking your agents so others can try them.
+PRs welcome. Ideas: new triggers (RSS, webhooks), new actions (Slack, email), more intent→URL mappings, example agents. If you build something with ClawBlink, share it in an issue or PR.
 
 ---
 

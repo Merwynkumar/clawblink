@@ -1,0 +1,16 @@
+name: hourly-weather-checker
+description: Checks and reports today's weather in Chennai
+trigger:
+  type: scheduled
+  interval_minutes: 60
+actions:
+- type: http_request
+  method: GET
+  url: https://wttr.in/Chennai?format=j1
+  output: weather_data
+- type: llm_analyze
+  prompt: 'Here is the weather data for Chennai: {weather_data}. Summarize it.'
+  output: weather_summary
+- type: notify_telegram
+  message: '{weather_summary}'
+  chat_id: '1179679431'

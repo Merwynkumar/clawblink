@@ -33,3 +33,8 @@ projects/
 # OS
 .DS_Store
 Thumbs.db
+
+# WhatsApp Web bridge (session + cache)
+bridge/whatsapp/.wwebjs_auth/
+bridge/whatsapp/.wwebjs_cache/
+bridge/whatsapp/node_modules/

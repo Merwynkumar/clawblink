@@ -110,12 +110,21 @@ class AgentRunner:
         """Return info about all running agents."""
         result = []
         for name, agent in self.agents.items():
+            # If the config file no longer exists on disk, treat this agent as
+            # removed for this process as well. This keeps /list output in sync
+            # with the YAML configs that are actually present.
+            config_path = self.configs_dir / f"{name}.yaml"
+            if not config_path.exists():
+                agent.running = False
+                continue
+
             trigger = agent.config.get("trigger", {})
             result.append({
                 "name": name,
                 "description": agent.description,
                 "trigger_type": trigger.get("type", "unknown"),
                 "interval_minutes": trigger.get("interval_minutes", 0),
+                "time_local": trigger.get("time_local") or getattr(agent.trigger, "time_local", None),
                 "run_count": agent.run_count,
                 "running": agent.running,
             })
@@ -145,19 +154,41 @@ class AgentRunner:
         counters: Dict[str, int] = {}
         while not self._stop_event.is_set():
             for name, agent in list(self.agents.items()):
+                # If the config file was removed on disk (for example by another
+                # running process or channel), stop this agent in this process too.
+                config_path = self.configs_dir / f"{name}.yaml"
+                if not config_path.exists():
+                    if agent.running:
+                        logger.info(
+                            "Config for agent '%s' no longer exists on disk; "
+                            "stopping agent in this process.",
+                            name,
+                        )
+                    agent.running = False
+                    continue
+
                 if not agent.running:
                     continue
-                interval = getattr(agent.trigger, "interval_minutes", 0)
-                if interval <= 0:
-                    continue
-                tick = counters.get(name, 0) + 1
-                counters[name] = tick
-                if tick >= interval:
-                    counters[name] = 0
-                    try:
-                        agent.trigger.fire()
-                    except Exception as e:
-                        logger.error("Trigger fire failed for '%s': %s", name, e)
+                trigger = agent.trigger
+                time_local = getattr(trigger, "time_local", None)
+                if time_local:
+                    if getattr(trigger, "should_fire_now", lambda _: False)(agent.last_run):
+                        try:
+                            agent.trigger.fire()
+                        except Exception as e:
+                            logger.error("Trigger fire failed for '%s': %s", name, e)
+                else:
+                    interval = getattr(trigger, "interval_minutes", 0)
+                    if interval <= 0:
+                        continue
+                    tick = counters.get(name, 0) + 1
+                    counters[name] = tick
+                    if tick >= interval:
+                        counters[name] = 0
+                        try:
+                            agent.trigger.fire()
+                        except Exception as e:
+                            logger.error("Trigger fire failed for '%s': %s", name, e)
             self._stop_event.wait(60)
 
     def load_saved_configs(self) -> int:

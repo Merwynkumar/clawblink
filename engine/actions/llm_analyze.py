@@ -26,15 +26,21 @@ def execute(
 
     _ERROR_SIGNALS = [
         "(HTTP error:",
-        '"error":', '"error_message":', '"error_code":',
+        "500 internal", '"error":', '"error_message":', '"error_code":',
         "Unauthorized", "Forbidden", "Invalid API Key",
         "access key", "invalid_access_key",
     ]
     prompt_lower = prompt.lower()
-    if any(sig.lower() in prompt_lower for sig in _ERROR_SIGNALS) and len(prompt) < 600:
-        logger.warning("Skipping LLM call -- upstream data looks like an API error")
+    # Skip LLM when upstream is clearly an error (HTTP 4xx/5xx or short error-like content).
+    is_short = len(prompt) < 800
+    looks_like_error = any(sig.lower() in prompt_lower for sig in _ERROR_SIGNALS)
+    if is_short and looks_like_error:
+        logger.warning("Skipping LLM call -- upstream data looks like an error")
         output_key = action.get("output", "analysis")
-        variables[output_key] = "Data fetch failed. The API returned an error instead of data."
+        variables[output_key] = (
+            "The source URL returned an error or no data (e.g. 404). "
+            "You can check /config for the agent URL or try /run again later."
+        )
         return variables
 
     system = (

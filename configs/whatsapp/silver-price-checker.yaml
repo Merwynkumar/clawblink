@@ -1,0 +1,19 @@
+name: silver-price-checker
+description: Checks the current silver price in INR and sends a message
+trigger:
+  type: polling
+  interval_minutes: 10
+  source: url_check
+  url: https://query1.finance.yahoo.com/v8/finance/chart/SI=F?interval=1d&range=1d
+actions:
+- type: http_request
+  method: GET
+  url: https://query1.finance.yahoo.com/v8/finance/chart/SI=F?interval=1d&range=1d
+  output: raw_data
+- type: llm_analyze
+  prompt: 'Here is the raw data from the silver price API: {raw_data}. Please extract
+    the current price in INR and provide a brief summary.'
+  output: analysis
+- type: notify_whatsapp
+  message: '{analysis}'
+  to: 265995998519534@lid
