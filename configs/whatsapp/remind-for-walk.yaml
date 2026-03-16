@@ -1,0 +1,9 @@
+name: remind-for-walk
+description: Reminds user to go for a walk every 45 minutes
+trigger:
+  type: scheduled
+  interval_minutes: 45
+actions:
+- type: notify_whatsapp
+  message: Remember to go for a walk!
+  to: 265995998519534@lid

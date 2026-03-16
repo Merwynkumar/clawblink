@@ -23,6 +23,15 @@ ClawBlink: Agent created.
 
 ---
 
+## 🧩 Features
+
+| 📰 24/7 News Digest<br>BBC News Digest | 💼 AI Job Radar<br>LinkedIn AI Job Monitor | 🧠 Python Skill Tutor<br>Python Concept Agent | ⏰ Smart Routine Manager<br>Reminder Agents |
+|---|---|---|---|
+| ![](docs/gifs/BBCNews.gif) | ![](docs/gifs/LinkedinJobsMonitor.gif) | ![](docs/gifs/Pythonprogramming.gif) | ![](docs/gifs/Reminder.gif) |
+| Discovery • Insights • Trends | Search • Filter • Alerts | Learn • Practice • Code | Schedule • Automate • Nudge |
+
+---
+
 ## ⌨️ CLI quick commands
 
 ```bash

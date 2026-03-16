@@ -56,7 +56,12 @@ def execute(action: Dict[str, Any], variables: Dict[str, Any]) -> Dict[str, Any]
                 resp.text[:200],
             )
     except Exception as e:
-        logger.warning("WhatsApp send error via bridge: %s", e)
+        logger.warning(
+            "WhatsApp send error via bridge: %s. "
+            "Ensure the Node gateway is running (clawblink channels gateway) so %s is reachable.",
+            e,
+            send_url,
+        )
 
     return variables
 

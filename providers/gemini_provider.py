@@ -18,7 +18,9 @@ class GeminiProvider:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is required. Get one free at https://aistudio.google.com/apikey")
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system: Optional[str] = None, timeout: Optional[int] = None) -> str:
+        if timeout is None:
+            timeout = 120
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
         contents = []
         if system:
@@ -28,13 +30,13 @@ class GeminiProvider:
 
         payload = {"contents": contents}
         resp = requests.post(
-            url, params={"key": self.api_key}, json=payload, timeout=120,
+            url, params={"key": self.api_key}, json=payload, timeout=timeout,
         )
         if resp.status_code == 429:
             logger.warning("Gemini rate limited (429), waiting 10s then giving up")
             time.sleep(10)
             resp = requests.post(
-                url, params={"key": self.api_key}, json=payload, timeout=120,
+                url, params={"key": self.api_key}, json=payload, timeout=timeout,
             )
             if resp.status_code == 429:
                 raise RuntimeError("Gemini rate limited")

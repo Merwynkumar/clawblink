@@ -14,9 +14,10 @@ class OllamaProvider:
         default = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
         self.base_url = (base_url or default).rstrip("/")
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system: Optional[str] = None, timeout: Optional[int] = None) -> str:
         full = f"{system}\n\n{prompt}" if system else prompt
-        timeout = int(os.environ.get("OLLAMA_TIMEOUT", "180"))
+        if timeout is None:
+            timeout = int(os.environ.get("OLLAMA_TIMEOUT", "180"))
         resp = requests.post(
             f"{self.base_url}/api/generate",
             json={"model": self.model, "prompt": full, "stream": False},

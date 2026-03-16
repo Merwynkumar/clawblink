@@ -1,0 +1,17 @@
+name: python-summary
+description: Provide a summary of a Python programming concept every 10 minutes.
+trigger:
+  type: scheduled
+  interval_minutes: 10
+actions:
+- type: http_request
+  method: GET
+  url: https://docs.python.org/3/tutorial/
+  output: raw_data
+- type: llm_analyze
+  prompt: 'Pick one Python concept (e.g. variables, loops, functions). Explain it
+    in 2-3 sentences, then give a short code example. Chat-friendly. Content: {raw_data}'
+  output: summary
+- type: notify_whatsapp
+  message: '{summary}'
+  to: 265995998519534@lid

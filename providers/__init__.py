@@ -68,13 +68,13 @@ class SmartProvider:
 
         logger.info("LLM: primary=%s, fallback=%s", self.primary_name, self.fallback_name or "none")
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system: Optional[str] = None, timeout: Optional[int] = None) -> str:
         try:
-            return self.primary.generate(prompt, system=system)
+            return self.primary.generate(prompt, system=system, timeout=timeout)
         except Exception as e:
             if self.fallback:
                 logger.warning("%s failed (%s), falling back to %s", self.primary_name, e, self.fallback_name)
-                return self.fallback.generate(prompt, system=system)
+                return self.fallback.generate(prompt, system=system, timeout=timeout)
             raise
 
 

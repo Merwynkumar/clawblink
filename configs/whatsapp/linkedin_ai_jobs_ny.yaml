@@ -1,0 +1,17 @@
+name: linkedin_ai_jobs_ny
+description: Monitor LinkedIn for AI-related jobs in New York and send top 5 matches
+  every 10 minutes.
+trigger:
+  type: scheduled
+  interval_minutes: 10
+actions:
+- type: http_request
+  method: GET
+  url: https://www.linkedin.com/jobs/search?keywords=AI&location=New+York
+  output: raw_data
+- type: llm_analyze
+  prompt: "From the content below, list the top 5 items (or as many as available). Only include items that match the user's request. User asked for: AI related jobs in New York. Format for chat: use a numbered list (1. 2. 3.). For each item: first line = number and title only; next line = 'Details:' then one short line (company, location, one key detail). Put a blank line between items so it is easy to read in chat. Content: {raw_data}"
+  output: summary
+- type: notify_whatsapp
+  message: '{summary}'
+  to: 265995998519534@lid

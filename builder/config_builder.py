@@ -1,10 +1,15 @@
 """Turn a plain-English user message into a YAML agent config using an LLM."""
 
 import logging
+import os
 import re
+import urllib.parse
 import yaml
 import requests
 from typing import Any, Dict, List, Optional
+
+# Longer timeout for agent creation (LLM may be slow). Override with CLAWBLINK_BUILD_TIMEOUT (seconds).
+_BUILD_TIMEOUT = int(os.environ.get("CLAWBLINK_BUILD_TIMEOUT", "300"))
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +35,11 @@ actions:
 
 Rules:
 - Data from internet MUST come from http_request first (LLM cannot fetch). Then llm_analyze to make it chat-readable, then notify.
-- When the user asks to explain, teach, learn, or get tips/lessons on a topic (programming, language, skill), the llm_analyze prompt MUST ask for one clear takeaway or concept plus a short example when relevant (e.g. code for programming), not a full-page summary. E.g. "Pick one concept from the content, explain briefly, add a short example if relevant. Chat-friendly. Content: {raw_data}"
+- When the user asks to explain, teach, learn, or get tips/lessons on a topic (programming, language, skill), the llm_analyze prompt MUST ask for one clear takeaway or concept plus a short example when relevant. When the user asks for a list (e.g. "top 5", "first N", "N matches/results"), use a prompt that lists that many items with main label and key details—do not use the one-concept format for list-style requests.
 - Scheduled: "every X minutes" -> interval_minutes: X. "every morning" -> time_local: "08:00", interval_minutes: 1440. "hourly" -> 60. "daily" -> 1440.
 - For news/sports/weather use scheduled + http_request. No github_issues unless user asked for GitHub. No API keys.
 - Match user source: BBC -> bbc.com/news, CNN -> lite.cnn.com. Sports -> bbc.com/sport/football/scores-fixtures. Prices: coingecko, yahoo finance. Weather: wttr.in/City?format=j1.
+- For job search URLs use simple query params only: keywords=<topic user asked> and location=<place user said>. Do not use geoId or other region IDs (they often point to wrong countries). Example: linkedin.com/jobs/search?keywords=AI&location=New+York
 - Keep YAML minimal. Use real, working URLs (they are validated after generation)."""
 
 
@@ -234,7 +240,7 @@ def _ensure_valid_urls(config: Dict[str, Any], user_message: str, llm: Any) -> N
             raw = (raw or "").strip()
             # Extract first URL from response (may be in markdown or plain text).
             found = re.search(r"https?://[^\s\]>\"]+", raw)
-            new_url = found.group(0).rstrip(".,;)\]>\"'") if found else None
+            new_url = found.group(0).rstrip('.,;)]>"\'') if found else None
             if new_url and _validate_url(new_url):
                 action["url"] = new_url
                 logger.info("Replaced invalid URL with LLM suggestion: %s", new_url[:60])
@@ -251,13 +257,91 @@ def _ensure_valid_urls(config: Dict[str, Any], user_message: str, llm: Any) -> N
             ) from e
 
 
+def _is_location_sensitive_job_url(url: str) -> bool:
+    """True if URL is a job-search URL that can target different locations (e.g. LinkedIn)."""
+    if not url:
+        return False
+    u = url.lower()
+    return "linkedin.com/jobs" in u or "indeed.com" in u or "glassdoor" in u
+
+
+def _strip_geoid_from_job_url(url: str) -> str:
+    """Remove geoId and similar region-ID params from job URLs so location is driven by location= only."""
+    if not url or "geoId=" not in url and "geoid=" not in url.lower():
+        return url
+    # Remove geoId=... and f_TPRF=... (LinkedIn region filters that can override location)
+    for param in ("geoId", "geoid", "f_TPRF", "f_LF"):
+        url = re.sub(r"[?&]" + re.escape(param) + r"=[^&]*", "", url, flags=re.IGNORECASE)
+    url = url.replace("?&", "?").replace("&&", "&").rstrip("?&")
+    return url
+
+
+def _extract_location_phrase(user_message: str) -> Optional[str]:
+    """Extract the place the user asked for (e.g. New York, London) from the message. Generic."""
+    if not user_message or not user_message.strip():
+        return None
+    m = user_message.strip()
+    # "in New York", "in New York City", "jobs in London", "in London, UK"
+    match = re.search(r"\bin\s+([^,.]+?)(?:\s*\.|,|$|\s+and\s+)", m, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    # "New York City", "New York" at start or after "location" / "place"
+    match = re.search(r"(?:location|place|city|based in)\s*[:\s]+([^,.]+?)(?:\s*\.|,|$)", m, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def _fix_job_search_location(config: Dict[str, Any], user_message: str, llm: Any) -> None:
+    """When the first http_request is a location-sensitive job URL, ask LLM to return a URL that
+    matches the user's requested location (generic: any city/region/country). No hardcoded places."""
+    actions = config.get("actions") or []
+    first_http = None
+    for a in actions:
+        if isinstance(a, dict) and a.get("type") == "http_request":
+            first_http = a
+            break
+    if not first_http:
+        return
+    url = (first_http.get("url") or "").strip()
+    if not _is_location_sensitive_job_url(url):
+        return
+    try:
+        prompt = (
+            f"User request: {user_message}\n\n"
+            "Return exactly one job search URL. Use only simple params: keywords=<topic> and location=<place user said>. "
+            "Do NOT use geoId or any region ID. Example: https://www.linkedin.com/jobs/search?keywords=AI&location=New+York "
+            "One line, URL only, no explanation."
+        )
+        raw = llm.generate(prompt, system=None, timeout=60)
+        raw = (raw or "").strip()
+        found = re.search(r"https?://[^\s\]>\"]+", raw)
+        new_url = found.group(0).rstrip('.,;)]>"\'') if found else None
+        if new_url:
+            new_url = _strip_geoid_from_job_url(new_url)
+            if "location=" not in new_url.lower():
+                loc = _extract_location_phrase(user_message)
+                if loc:
+                    sep = "&" if "?" in new_url else "?"
+                    new_url = new_url + sep + "location=" + urllib.parse.quote(loc)
+            if _validate_url(new_url):
+                first_http["url"] = new_url
+                logger.info("Set job search URL (keywords + location only, no geoId)")
+    except Exception as e:
+        logger.warning("Could not fix job search location: %s", e)
+
+
 def _fix_http_request_actions(config: Dict[str, Any], user_message: str) -> None:
-    """Patch config in-place: remove API-key URLs/headers and fix wrong source. No LLM call."""
+    """Patch config in-place: remove API-key URLs/headers, strip geoId from job URLs, fix wrong source. No LLM call."""
     msg_lower = user_message.lower()
     actions: List[Dict[str, Any]] = config.get("actions") or []
     for action in actions:
         if not isinstance(action, dict) or action.get("type") != "http_request":
             continue
+        url = str(action.get("url", ""))
+        if _is_location_sensitive_job_url(url) and ("geoId=" in url or "geoid=" in url.lower()):
+            action["url"] = _strip_geoid_from_job_url(url)
+            logger.info("Stripped geoId from job URL so location uses simple location= param")
         url = str(action.get("url", "")).lower()
         headers = action.get("headers")
         if isinstance(headers, dict):
@@ -283,8 +367,11 @@ def _fix_http_request_actions(config: Dict[str, Any], user_message: str) -> None
 
 
 def _is_educational_intent(user_message: str) -> bool:
-    """True if the user wants to learn/explain/teach/tips rather than e.g. news or prices."""
+    """True if the user wants to learn/explain/teach/tips rather than e.g. news, prices, or jobs."""
     m = user_message.lower()
+    # Clearly not educational: jobs, listings, vacancies, career.
+    if any(x in m for x in ("job", "jobs", "linkedin", "vacancy", "vacancies", "openings", "positions", "career", "hiring", "recruit")):
+        return False
     # Clearly not educational: main ask is news, weather, sports, prices.
     if any(x in m for x in ("news", "weather", "sport", "score", "fixture", "price", "stock", "gold", "silver", "bitcoin", "headline")):
         if not any(x in m for x in ("explain", "teach", "learn", "concept", "tutorial", "lesson", "tip")):
@@ -300,8 +387,9 @@ def _is_educational_intent(user_message: str) -> bool:
 
 
 def _fix_educational_prompt(config: Dict[str, Any], user_message: str) -> None:
-    """For educational/learning requests, set llm_analyze to one takeaway + example and use known-good URL."""
-    if not _is_educational_intent(user_message):
+    """For educational/learning requests, set llm_analyze to one takeaway + example and use known-good URL.
+    Skipped when user asked for a list (top N, etc.) so listing and educational never mix."""
+    if not _is_educational_intent(user_message) or _is_listing_intent(user_message):
         return
     msg_lower = user_message.lower()
     actions = config.get("actions") or []
@@ -352,6 +440,71 @@ def _fix_educational_prompt(config: Dict[str, Any], user_message: str) -> None:
             break
 
 
+def _is_listing_intent(user_message: str) -> bool:
+    """True if the user asks for a numbered/short list of items (top N, first N, N results, etc.).
+    Generic: applies to jobs, news digests, events, products, etc. No domain-specific keywords."""
+    m = user_message.lower()
+    # User explicitly asked for a list with a number.
+    if re.search(r"top\s+\d+", m) or re.search(r"first\s+\d+", m):
+        return True
+    if re.search(r"\d+\s*(matches|results|items|headlines|articles|list)", m):
+        return True
+    if re.search(r"(send|give|get)\s+(me\s+)?(the\s+)?(top|first)\s+\d+", m):
+        return True
+    if re.search(r"list\s+(the\s+)?(top\s+)?\d+", m):
+        return True
+    return False
+
+
+def _parse_top_n(user_message: str) -> int:
+    """Parse 'top N', 'first N', 'N matches', etc. from message. Default 5."""
+    m = user_message.lower()
+    for pattern in (r"top\s+(\d+)", r"first\s+(\d+)", r"(\d+)\s+matches?", r"(\d+)\s+results?", r"(\d+)\s+items?", r"(\d+)\s+headlines?"):
+        match = re.search(pattern, m)
+        if match:
+            n = int(match.group(1))
+            if 1 <= n <= 50:
+                return n
+    return 5
+
+
+def _listing_filter_instruction(user_message: str, max_len: int = 380) -> str:
+    """Short instruction so the LLM only lists items matching the user's request (topic, location, etc.).
+    Uses 380 chars so keywords, location, experience, etc. are not cut off."""
+    phrase = (user_message or "").strip()
+    if len(phrase) > max_len:
+        phrase = phrase[: max_len - 3].rstrip() + "..."
+    if not phrase:
+        return "Only include items that match the user's request; skip unrelated entries."
+    return f"Only include items that match the user's request. User asked for: {phrase}"
+
+def _fix_listing_prompt(config: Dict[str, Any], user_message: str) -> None:
+    """When user asks for 'top N' / list of items, set llm_analyze to a generic listing format.
+    Includes a filter instruction so the LLM returns only items matching the user's request (e.g. AI jobs, not any jobs)."""
+    if not _is_listing_intent(user_message):
+        return
+    actions = config.get("actions") or []
+    out_var = "raw_data"
+    for a in actions:
+        if isinstance(a, dict) and a.get("type") == "http_request":
+            out_var = a.get("output", "raw_data")
+            break
+    n = _parse_top_n(user_message)
+    filter_instruction = _listing_filter_instruction(user_message)
+    prompt = (
+        f"From the content below, list the top {n} items (or as many as available). "
+        f"{filter_instruction} "
+        "Format for chat: use a numbered list (1. 2. 3.). For each item: first line = number and title only; "
+        "next line = 'Details:' then one short line (e.g. company, location, one key detail). "
+        "Put a blank line between items so it is easy to read in chat. Content: {" + out_var + "}"
+    )
+    for action in actions:
+        if isinstance(action, dict) and action.get("type") == "llm_analyze":
+            action["prompt"] = prompt
+            logger.info("Set llm_analyze to generic listing (top %s items) for user request", n)
+            break
+
+
 def _fix_github_issues_trigger(config: Dict[str, Any], user_message: str) -> None:
     """If trigger is github_issues but user didn't ask for GitHub, switch to scheduled + generic. No LLM call."""
     trigger = config.get("trigger") or {}
@@ -376,7 +529,7 @@ class ConfigBuilder:
 
     def build(self, user_message: str, chat_id: Optional[str] = None) -> Dict[str, Any]:
         """Convert a user message to a parsed agent config dict. Raises ValueError on failure."""
-        raw = self.llm.generate(user_message, system=SYSTEM_PROMPT)
+        raw = self.llm.generate(user_message, system=SYSTEM_PROMPT, timeout=_BUILD_TIMEOUT)
         yaml_text = _extract_yaml(raw)
 
         try:
@@ -386,6 +539,7 @@ class ConfigBuilder:
             raw_retry = self.llm.generate(
                 f"Output was not valid YAML. Try again. User request: {user_message}",
                 system=SYSTEM_PROMPT,
+                timeout=_BUILD_TIMEOUT,
             )
             yaml_text = _extract_yaml(raw_retry)
             try:
@@ -396,13 +550,17 @@ class ConfigBuilder:
         if not isinstance(config, dict):
             raise ValueError("Generated config is not a valid YAML mapping.")
 
-        # Fix config in-code: API-key URLs, wrong source, educational prompt.
+        # Fix config in-code: API-key URLs, wrong source, educational prompt, jobs listing prompt.
         _fix_http_request_actions(config, user_message)
         _fix_github_issues_trigger(config, user_message)
         _fix_educational_prompt(config, user_message)
+        _fix_listing_prompt(config, user_message)
 
         # Generic: set first http_request URL from user intent so YAML has correct URL at creation time.
         _set_url_from_user_intent(config, user_message)
+
+        # When the URL is a location-sensitive job URL (e.g. LinkedIn), fix it to match the user's requested location.
+        _fix_job_search_location(config, user_message, self.llm)
 
         # Ensure every http_request URL is valid and returns data (generic for any agent).
         _ensure_valid_urls(config, user_message, self.llm)

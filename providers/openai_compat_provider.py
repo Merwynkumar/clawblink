@@ -37,17 +37,19 @@ class OpenAICompatProvider:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY is required.")
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system: Optional[str] = None, timeout: Optional[int] = None) -> str:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
+        if timeout is None:
+            timeout = 120
 
         resp = requests.post(
             f"{self.base_url}/chat/completions",
             headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
             json={"model": self.model, "messages": messages, "max_tokens": 2048},
-            timeout=120,
+            timeout=timeout,
         )
         resp.raise_for_status()
         data = resp.json()

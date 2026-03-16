@@ -1,0 +1,17 @@
+name: check-bbc-news
+description: Check BBC news every 5 minutes and update me with the top 3 latest news.
+trigger:
+  type: scheduled
+  interval_minutes: 5
+actions:
+- type: http_request
+  method: GET
+  url: https://www.bbc.com/news
+  output: raw_data
+- type: llm_analyze
+  prompt: 'Summarize the top 3 latest news articles from BBC in a chat-friendly format,
+    including short headlines and brief descriptions. Content: {raw_data}'
+  output: summary
+- type: notify_whatsapp
+  message: '{summary}'
+  to: 265995998519534@lid
