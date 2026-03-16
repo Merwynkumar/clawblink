@@ -167,31 +167,50 @@ Data is always fetched by `http_request` first; the LLM only sees that text. No 
 
 ---
 
-## 🏗️ Architecture
+## 📁 Project structure
 
 ```text
 clawblink/
 ├── main.py                 # Telegram entry point
-├── interfaces/
-│   ├── cli.py              # clawblink gateway | channels login | whatsapp-bridge
-│   ├── telegram_bot.py     # Telegram handlers
-│   └── whatsapp_bridge.py  # WhatsApp HTTP bridge
-├── builder/
-│   ├── config_builder.py   # LLM: message → YAML (with URL validation & intent mapping)
-│   └── config_validator.py
-├── engine/
-│   ├── runner.py           # Agent lifecycle + scheduler
-│   ├── triggers/           # scheduled, polling, manual
-│   └── actions/            # http_request, llm_analyze, notify_telegram, notify_whatsapp
-├── providers/              # Ollama, Gemini, OpenAI-compatible
-├── configs/
-│   ├── telegram/           # Agents created from Telegram
-│   └── whatsapp/           # Agents created from WhatsApp
-├── bridge/whatsapp/        # Node.js WhatsApp Web (QR)
-├── pyproject.toml
-├── requirements.txt
-└── .env.example
+├── interfaces/             # Chat interfaces (CLI, Telegram, WhatsApp bridge)
+├── builder/                # LLM: message → YAML config + validation
+├── engine/                 # Agent runner, triggers, and actions
+├── providers/              # LLM providers (Ollama, Gemini, OpenAI-compatible)
+├── configs/                # Saved agent configs (telegram/ and whatsapp/)
+├── bridge/whatsapp/        # Node.js WhatsApp Web (QR) gateway
+├── pyproject.toml          # Packaging + CLI entrypoint
+├── requirements.txt        # Python dependencies
+└── .env.example            # Example environment config
 ```
+
+---
+
+## 🧱 Architecture
+
+High-level flow from your chat message to a running agent:
+
+1. **Interface layer (`interfaces/`)**  
+   - Telegram bot or WhatsApp bridge receives your message.  
+   - Commands like `/start`, `/list`, `/run <name>` are parsed here.
+
+2. **Config builder (`builder/`)**  
+   - `config_builder.py` asks the LLM to turn plain English into a YAML agent config.  
+   - URL helpers fix news / jobs / prices sources and validate that endpoints actually return data.  
+   - `config_validator.py` checks the structure (trigger + actions are valid) before saving.
+
+3. **Agent runner (`engine/`)**  
+   - `runner.py` loads configs from `configs/telegram` or `configs/whatsapp`, starts a background scheduler, and tracks each agent’s runs.  
+   - Triggers (`scheduled`, `polling`, `manual`) decide **when** an agent should fire.
+
+4. **Actions pipeline (`engine/actions/`)**  
+   - `http_request` fetches data from APIs or websites.  
+   - `llm_analyze` turns raw data into a chat-sized summary, list, or explanation.  
+   - `notify_telegram` / `notify_whatsapp` send the final message back to the right chat.
+
+5. **LLM providers (`providers/`)**  
+   - `SmartProvider` picks the best available LLM (Ollama, Gemini, or any OpenAI-compatible endpoint) and handles timeouts and fallbacks.
+
+LLMs never call the network directly: **all external data goes through `http_request`**, then `llm_analyze` works only on that text. This keeps agents predictable and debuggable.
 
 ---
 
