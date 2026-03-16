@@ -63,7 +63,7 @@ ClawBlink is inspired by projects like [nanobot](https://github.com/HKUDS/nanobo
 | Where it lives | CLI + many channels | Custom infra | Hosted dashboard | Your own Telegram bot and/or WhatsApp number |
 | Setup | Install + configure | Multi-service setup | Account + payment | `pip install` + `.env` |
 | Target user | Developers | Advanced devs | Anyone (SaaS) | Anyone who can chat |
-| Codebase | ~4k+ LOC | Hundreds of k LOC | Closed source | ~750 LOC |
+| Codebase | ~4k+ LOC | Hundreds of k LOC | Closed source | ~1.9k LOC |
 | Cost | Free | Free (but complex) | $/month | Free, self-hosted |
 
 - If you want an **ultra-flexible research agent platform**, check out [nanobot](https://github.com/HKUDS/nanobot).
@@ -229,7 +229,12 @@ Pattern: `http_request` → optional `llm_analyze` → `notify_telegram` or `not
 
 ## 🤝 Contributing
 
-PRs welcome. Ideas: new triggers (RSS, webhooks), new actions (Slack, email), more intent→URL mappings, example agents. If you build something with ClawBlink, share it in an issue or PR.
+- **New triggers** – RSS, webhooks, email, or other event sources.
+- **New actions** – Slack/Discord notifications, email, file writes, etc.
+- **Smarter builder** – More intent→URL mappings, better validation heuristics.
+- **Example agents & docs** – Great starter agents or walkthroughs.
+
+If you build something with ClawBlink, share it in an issue or PR.
 
 ---
 
