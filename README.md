@@ -189,6 +189,10 @@ clawblink/
 
 High-level flow from your chat message to a running agent:
 
+![ClawBlink architecture](docs/clawblink-architecture.png)
+
+Key pieces:
+
 1. **Interface layer (`interfaces/`)**  
    - Telegram bot or WhatsApp bridge receives your message.  
    - Commands like `/start`, `/list`, `/run <name>` are parsed here.
