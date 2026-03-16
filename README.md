@@ -48,8 +48,8 @@ clawblink whatsapp-bridge     # Python bridge
 
 ## 📰 News
 
-- **2025‑03‑10** – **ClawBlink launched.** No-code AI agents from Telegram and WhatsApp – describe what you want in plain English, get running automations in under a minute.
-- **2025‑03‑09** – Smart agent creation: URLs validated at creation time, intent-based URLs (news, Python, prices, weather), and chat-readable outputs so every agent delivers useful results.
+- **2026‑03‑16** – 🚀 **ClawBlink launched.** No-code AI agents from Telegram and WhatsApp – describe what you want in plain English, get running automations in under a minute.
+- **2026‑03‑15** – 🧠 Smart agent creation: URLs validated at creation time, intent-based URLs (news, Python, prices, weather), and chat-readable outputs so every agent delivers useful results.
 
 ---
 
